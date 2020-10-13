@@ -1,0 +1,31 @@
+43 +43 -43
+372.0 +372.0 -372.0
+4e6	+4e6	-4e6	4e+6	+4e+6	-4e+6	4e-6	+4e-6	-4e-6
+56.34e4	+56.34e4	-56.34e4
+
+
+"Here is a string."
+
+"Here are" "two strings."
+
+"A string containing " results in error."
+
+Thisisanextremelylongvariablename
+Thisisanerrorthatlooks%somewhatlikeavariablename
+Fine44
+Fine44fine
+44fine
+
+stuff //comment
+
+line
+
+/* A multi-line
+   comment */
+line
+
+/* A comment * / that should work */
+/* A comment * / that should work **/
+/* A comment * // that should work ***/ findthis
+
+line
