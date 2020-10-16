@@ -4,7 +4,9 @@ This is a basic compiler that will print integers, floating point numbers, and s
 
 ### Grammar Details
 The grammar is loosely oriented around French. Any keywords in the grammar are not case sensitive (ex. `ecrivez` does the same thing as `eCriVEZ`).
+
 `rien` - equivalent to void in Java
+
 `ecrivez` - "print"
 
 Example method that this compiler supports:
