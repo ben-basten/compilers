@@ -7,6 +7,7 @@
 using namespace std;
 
 int yylex ();
+void checkValidIdentifier(char *id);
 void yyerror (const char *er);
 
 int strct=0;
@@ -63,10 +64,11 @@ STATEMENT : DECLARATION
           | PRINT
           ;
 
-ASSIGNMENT : IDENTIFIER '=' STRING
-           | IDENTIFIER '=' FLOAT
-           | IDENTIFIER '=' INT
-           | IDENTIFIER '=' IDENTIFIER
+ASSIGNMENT : IDENTIFIER '=' STRING { checkValidIdentifier($1); }
+           | IDENTIFIER '=' FLOAT { checkValidIdentifier($1); }
+           | IDENTIFIER '=' INT { checkValidIdentifier($1); }
+           | IDENTIFIER '=' IDENTIFIER { checkValidIdentifier($1);
+                                         checkValidIdentifier($3); }
            ;
 
 DECLARATION : ENTIER VARLIST { /* defines an integer */ }
@@ -95,6 +97,13 @@ PRINTABLE : INT { string val = to_string($1);
           ;
 
 %%
+
+void checkValidIdentifier(char *id) {
+        if(!(varList != nullptr && varList->isDeclared(id))) {
+                string errMsg = "Identifier \"" + string(id) + "\" has not been declared yet in this scope.";
+                yyerror(errMsg.c_str());
+        } 
+}
 
 void yyerror (const char *er) {
         cerr << "Error on line " << lineno << ": " << er << endl;

@@ -16,6 +16,7 @@ public:
     char * getName();
 	Node * getNext();
 	void print();
+	bool isDeclared(char *findMe);
 };
 
 
