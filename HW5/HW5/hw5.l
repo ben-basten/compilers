@@ -34,8 +34,8 @@ err     [^\ \n\t]+
 {com}       { yylval.str = _strdup(yytext); return COMMENCEMENT; }
 {ecr}       { yylval.str = _strdup(yytext); return ECRIVEZ; }
 {rien}      { yylval.str = _strdup(yytext); return RIEN; }
-{ent}       { yylval.str = _strdup(yytext); return ENTIER; }
-{reel}      { yylval.str = _strdup(yytext); return REEL; }
+{ent}       { yylval.i = 1; return ENTIER; }
+{reel}      { yylval.i = 2; return REEL; }
 {fp}        { yylval.fl = atof(yytext); return FLOAT; }
 {int}       { yylval.i = atoi(yytext); return INT; }
 {str}       { yylval.str = _strdup(yytext); return STRING; }

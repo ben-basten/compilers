@@ -7,7 +7,6 @@
 using namespace std;
 
 Node::Node(char* newName, Node* oldList) {
-
 	name = newName;
 	type = Type::UNDECLARED_TYPE;
 	offset = 0;
@@ -24,3 +23,11 @@ Node::Node(char* newName, Type newType, Node* oldList) {
 char * Node::getName () {return name;}
 
 Node * Node::getNext () {return next;}
+ 
+void Node::print() {
+	cout << name << " - ";
+	if(type == Type::INT_TYPE) cout << "int" << endl;
+	else cout << "float" << endl;
+
+	if(next != nullptr) next->print();
+}

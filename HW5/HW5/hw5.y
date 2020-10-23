@@ -10,21 +10,20 @@ int yylex ();
 void yyerror (const char *er);
 
 int strct=0;
-Node *stringList = nullptr;
-Node *varList = nullptr;
+Node *stringList = nullptr; // keeps list of strings to print in .data section
+Node *varList = nullptr; // symbol table of all of the declared variables
 extern int lineno;
 %}
 %union {
-
  char *str; //a string in C
  int i;
  float fl;
 }
 
 
-%token ECRIVEZ RIEN ENTIER REEL COMMENCEMENT 
+%token ECRIVEZ RIEN COMMENCEMENT 
 %token <str> STRING IDENTIFIER
-%token <i> INT
+%token <i> INT ENTIER REEL
 %token <fl> FLOAT
 
 %type <str> PRINTABLE
@@ -37,6 +36,7 @@ MAIN : HEADER COMMANDS '}' { cout << "\tli $v0,10" << endl; // exit system call 
                                 cout << "str" << i << ":\t.asciiz \"" << stringList->getName() << "\"" << endl;
                                 stringList = stringList->getNext();
                              }
+                             varList->print();
                            }
      | error '}' { yyerrok; }
      ;
@@ -69,13 +69,12 @@ ASSIGNMENT : IDENTIFIER '=' STRING
            | IDENTIFIER '=' IDENTIFIER
            ;
 
-DECLARATION : ENTIER IDENTIFIER { /* defines an integer */
-                                varList = new Node($2, Type::INT_TYPE, varList); }
+DECLARATION : ENTIER VARLIST { /* defines an integer */ }
             | REEL VARLIST { /* defines a float */ }
             ;
 
-VARLIST : IDENTIFIER
-        | VARLIST ',' IDENTIFIER
+VARLIST : IDENTIFIER { varList = new Node ($1, static_cast<Type>($<i>0), varList); }
+        | VARLIST ',' IDENTIFIER { varList = new Node ($3, static_cast<Type>($<i>0), varList); }
         ;
 
 PRINT : ECRIVEZ '(' PRINTABLE ')' { strct++;
@@ -96,6 +95,7 @@ PRINTABLE : INT { string val = to_string($1);
           ;
 
 %%
+
 void yyerror (const char *er) {
-    cerr << "Error on line " << lineno << ": " << er << endl;
+        cerr << "Error on line " << lineno << ": " << er << endl;
 }
