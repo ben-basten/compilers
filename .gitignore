@@ -1,2 +1,8 @@
 *.pdf
 *.msi
+.vs
+*.vcxproj*
+*.sln
+*.flex*
+*.tab*
+hw5.exe
