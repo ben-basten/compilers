@@ -48,12 +48,12 @@ int Node::size() {
 	else return 1 + next->size();
 }
 
-bool Node::isDeclared(char *findMe) {
+int Node::findOffset(char *findMe) {
 	if(strcmp(findMe, data) == 0) {
-		return true;
+		return offset;
 	} else if (next != nullptr) {
-		return next->isDeclared(findMe);
+		return next->findOffset(findMe);
 	} else {
-		return false;
+		return -1;
 	}
 }

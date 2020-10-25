@@ -7,9 +7,9 @@
 using namespace std;
 
 int yylex ();
-bool isValidIdentifier(char *id);
-void storeInteger(int val);
-void storeFloat(float val);
+int isValidIdentifier(char *id);
+void storeInteger(int val, int offset);
+void storeFloat(float val, int offset);
 void yyerror (const char *er);
 
 Node *dataList = nullptr; // keeps list of strings to print in .data section
@@ -64,12 +64,14 @@ STATEMENT : DECLARATION
           ;
 
 ASSIGNMENT : IDENTIFIER '=' STRING { isValidIdentifier($1); }
-           | IDENTIFIER '=' FLOAT { if(isValidIdentifier($1)) {
-                                        storeFloat($3);
+           | IDENTIFIER '=' FLOAT { int offset = isValidIdentifier($1);
+                                    if(offset != -1) {
+                                        storeFloat($3, offset);
                                     } 
                                   }
-           | IDENTIFIER '=' INT { if(isValidIdentifier($1)) {
-                                        storeInteger($3);
+           | IDENTIFIER '=' INT { int offset = isValidIdentifier($1);
+                                  if(offset != -1) {
+                                        storeInteger($3, offset);
                                   } 
                                 }
            | IDENTIFIER '=' IDENTIFIER { isValidIdentifier($1);
@@ -96,7 +98,7 @@ PRINTABLE : INT { $$ = _strdup(to_string($1).c_str()); }
                      text = text.substr(1, text.length() - 2);
                      $$ = _strdup(text.c_str()); }
           | FLOAT { $$ = _strdup(to_string($1).c_str()); }
-          | IDENTIFIER { if(isValidIdentifier($1)) {
+          | IDENTIFIER { if(isValidIdentifier($1) != -1) {
                                 /* action code here */
                          } 
                        }
@@ -104,24 +106,28 @@ PRINTABLE : INT { $$ = _strdup(to_string($1).c_str()); }
 
 %%
 
-bool isValidIdentifier(char *id) {
-        if(!(varList != nullptr && varList->isDeclared(id))) {
+// returns the offset if it is declared, or -1 if not
+int isValidIdentifier(char *id) {
+        int offset = -1;
+        bool isEmpty = (varList == nullptr);
+        if(!isEmpty) offset = varList->findOffset(id);
+        if(!(!isEmpty && offset != -1)) {
                 string errMsg = "Identifier \"" + string(id) + "\" has not been declared yet in this scope.";
                 yyerror(errMsg.c_str());
-                return false;
+                return -1;
         } 
-        return true;
+        return offset;
 }
 
-void storeInteger(int val) {
+void storeInteger(int val, int offset) {
         cout << "\tli $t0," << val << endl;
-        cout << "\tsw $t0,-" << varList->getOffset() << "($fp)" << endl;
+        cout << "\tsw $t0,-" << offset << "($fp)" << endl;
 }
 
-void storeFloat(float val) {
+void storeFloat(float val, int offset) {
         dataList = new Node (strdup(to_string(val).c_str()), Type::FLOAT_TYPE, dataList);
         cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
-        cout << "\ts.s $f0,-" << varList->getOffset() << "($fp)" << endl;
+        cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
 }
 
 void yyerror (const char *er) {

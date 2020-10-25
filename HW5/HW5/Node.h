@@ -21,7 +21,7 @@ public:
 	std::string getUniqueName();
 	void print();
 	void printData();
-	bool isDeclared(char *findMe);
+	int findOffset(char *findMe); // returns offset if variable is found, -1 if not found
 };
 
 
