@@ -8,10 +8,11 @@ using namespace std;
 
 int yylex ();
 bool isValidIdentifier(char *id);
+void storeInteger(int val);
+void storeFloat(float val);
 void yyerror (const char *er);
 
-int strct=0;
-Node *stringList = nullptr; // keeps list of strings to print in .data section
+Node *dataList = nullptr; // keeps list of strings to print in .data section
 Node *varList = nullptr; // symbol table of all of the declared variables
 extern int lineno;
 %}
@@ -33,10 +34,7 @@ extern int lineno;
 MAIN : HEADER COMMANDS '}' { cout << "\tli $v0,10" << endl; // exit system call code
                              cout << "\tsyscall" << endl; 
                              cout << endl << "\t.data" << endl;
-                             for(int i = strct; i>0;i--) {
-                                cout << "str" << i << ":\t.asciiz \"" << stringList->getName() << "\"" << endl;
-                                stringList = stringList->getNext();
-                             }
+                             dataList->printData();
                              varList->print();
                            }
      | error '}' { yyerrok; }
@@ -66,8 +64,14 @@ STATEMENT : DECLARATION
           ;
 
 ASSIGNMENT : IDENTIFIER '=' STRING { isValidIdentifier($1); }
-           | IDENTIFIER '=' FLOAT { isValidIdentifier($1); }
-           | IDENTIFIER '=' INT { isValidIdentifier($1); }
+           | IDENTIFIER '=' FLOAT { if(isValidIdentifier($1)) {
+                                        storeFloat($3);
+                                    } 
+                                  }
+           | IDENTIFIER '=' INT { if(isValidIdentifier($1)) {
+                                        storeInteger($3);
+                                  } 
+                                }
            | IDENTIFIER '=' IDENTIFIER { isValidIdentifier($1);
                                          isValidIdentifier($3); }
            ;
@@ -80,11 +84,10 @@ VARLIST : IDENTIFIER { varList = new Node ($1, static_cast<Type>($<i>0), varList
         | VARLIST ',' IDENTIFIER { varList = new Node ($3, static_cast<Type>($<i>0), varList); }
         ;
 
-PRINT : ECRIVEZ '(' PRINTABLE ')' { strct++;
+PRINT : ECRIVEZ '(' PRINTABLE ')' { dataList = new Node ($3, Type::STRING_TYPE, dataList);
                                     cout << "\tli $v0,4" << endl;
-                                    cout << "\tla $a0,str" << strct << endl;
-                                    cout << "\tsyscall" << endl; 
-                                    stringList = new Node ($3, stringList); }
+                                    cout << "\tla $a0," << dataList->getUniqueName() << endl;
+                                    cout << "\tsyscall" << endl; }
       | error ')' { yyerrok; }
       ; 
 
@@ -108,6 +111,17 @@ bool isValidIdentifier(char *id) {
                 return false;
         } 
         return true;
+}
+
+void storeInteger(int val) {
+        cout << "\tli $t0," << val << endl;
+        cout << "\tsw $t0,-" << varList->getOffset() << "($fp)" << endl;
+}
+
+void storeFloat(float val) {
+        dataList = new Node (strdup(to_string(val).c_str()), Type::FLOAT_TYPE, dataList);
+        cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
+        cout << "\ts.s $f0,-" << varList->getOffset() << "($fp)" << endl;
 }
 
 void yyerror (const char *er) {
