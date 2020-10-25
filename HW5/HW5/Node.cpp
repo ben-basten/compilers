@@ -16,13 +16,17 @@ Node::Node(char* newName, Node* oldList) {
 Node::Node(char* newName, Type newType, Node* oldList) {
 	name = newName;
 	type = newType;
-	offset = 0; 
 	next = oldList;
+
+	if(next == nullptr) offset = 0;
+	else offset = next->getOffset() + 4;
 }
 
 char * Node::getName () {return name;}
 
 Node * Node::getNext () {return next;}
+
+int Node::getOffset () {return offset;}
  
 void Node::print() {
 	cout << name << " - ";

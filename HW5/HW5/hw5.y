@@ -44,7 +44,8 @@ MAIN : HEADER COMMANDS '}' { cout << "\tli $v0,10" << endl; // exit system call 
 
 HEADER : RIEN COMMENCEMENT '(' PARAMS ')' '{' { cout << "\t.text" << endl;
                                               cout << "\t.globl main" << endl;
-                                              cout << "main:" << endl;}
+                                              cout << "main:" << endl;
+                                              cout << "\tmove $fp,$sp" << endl; }
        | error '{' { yyerrok; }
        ;
 

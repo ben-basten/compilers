@@ -15,6 +15,7 @@ public:
 	Node(char* newName, Type type, Node* oldList);
     char * getName();
 	Node * getNext();
+	int getOffset();
 	void print();
 	bool isDeclared(char *findMe);
 };
