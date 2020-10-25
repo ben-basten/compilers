@@ -7,7 +7,7 @@
 using namespace std;
 
 int yylex ();
-void checkValidIdentifier(char *id);
+bool isValidIdentifier(char *id);
 void yyerror (const char *er);
 
 int strct=0;
@@ -64,11 +64,11 @@ STATEMENT : DECLARATION
           | PRINT
           ;
 
-ASSIGNMENT : IDENTIFIER '=' STRING { checkValidIdentifier($1); }
-           | IDENTIFIER '=' FLOAT { checkValidIdentifier($1); }
-           | IDENTIFIER '=' INT { checkValidIdentifier($1); }
-           | IDENTIFIER '=' IDENTIFIER { checkValidIdentifier($1);
-                                         checkValidIdentifier($3); }
+ASSIGNMENT : IDENTIFIER '=' STRING { isValidIdentifier($1); }
+           | IDENTIFIER '=' FLOAT { isValidIdentifier($1); }
+           | IDENTIFIER '=' INT { isValidIdentifier($1); }
+           | IDENTIFIER '=' IDENTIFIER { isValidIdentifier($1);
+                                         isValidIdentifier($3); }
            ;
 
 DECLARATION : ENTIER VARLIST { /* defines an integer */ }
@@ -87,22 +87,26 @@ PRINT : ECRIVEZ '(' PRINTABLE ')' { strct++;
       | error ')' { yyerrok; }
       ; 
 
-PRINTABLE : INT { string val = to_string($1);
-                  $$ = _strdup(val.c_str()); } 
+PRINTABLE : INT { $$ = _strdup(to_string($1).c_str()); } 
           | STRING { string text = string($1);
                      text = text.substr(1, text.length() - 2);
                      $$ = _strdup(text.c_str()); }
-          | FLOAT { string val = to_string($1);
-                    $$ = _strdup(val.c_str()); }
+          | FLOAT { $$ = _strdup(to_string($1).c_str()); }
+          | IDENTIFIER { if(isValidIdentifier($1)) {
+                                /* action code here */
+                         } 
+                       }
           ;
 
 %%
 
-void checkValidIdentifier(char *id) {
+bool isValidIdentifier(char *id) {
         if(!(varList != nullptr && varList->isDeclared(id))) {
                 string errMsg = "Identifier \"" + string(id) + "\" has not been declared yet in this scope.";
                 yyerror(errMsg.c_str());
+                return false;
         } 
+        return true;
 }
 
 void yyerror (const char *er) {
