@@ -5,4 +5,7 @@
 *.sln
 *.flex*
 *.tab*
+
 hw5.exe
+HW5/HW5/*.in
+HW5/HW5/*.asm

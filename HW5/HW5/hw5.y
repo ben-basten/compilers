@@ -146,8 +146,8 @@ void printString(string val) {
 
 void printFloat(float val) {
         dataList = new Node (val, dataList);
-        cout << "\tli $v0,4" << endl;
-        cout << "\tla $a0," << dataList->getUniqueName() << endl;
+        cout << "\tli $v0,2" << endl;
+        cout << "\tl.s $f12," << dataList->getUniqueName() << endl;
         cout << "\tsyscall" << endl;
 }
 
