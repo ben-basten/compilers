@@ -17,6 +17,14 @@ Node::Node(char* newData, Type newType, Node* oldList) {
 	if(next != nullptr) offset = next->getOffset() + 4;
 }
 
+Node::Node(float newData, Node* oldList) {
+	flData = newData;
+	next = oldList;
+	type = Type::FLOAT_TYPE;
+	uniqueName = "fl" + to_string(size());
+	if(next != nullptr) offset = next->getOffset() + 4;
+}
+
 Node * Node::getNext () {return next;}
 
 int Node::getOffset () {return offset;}
@@ -52,7 +60,7 @@ void Node::printData() {
 	if(type == Type::STRING_TYPE) {
 		cout << uniqueName << ":\t.asciiz \"" << data << "\"" << endl;
 	} else if (type == Type::FLOAT_TYPE) {
-		cout << uniqueName << ":\t.float " << data << endl;
+		cout << uniqueName << ":\t.float " << flData << endl; // assumes there is a value in flData
 	}
 
 	if(next != nullptr) next->printData();

@@ -12,7 +12,7 @@ void storeInteger(int val, int offset);
 void storeFloat(float val, int offset);
 void printInt(int val);
 void printString(string val);
-void printFloat(string val);
+void printFloat(float val);
 void printIdentifier(int offset);
 void yyerror (const char *er);
 
@@ -96,7 +96,7 @@ PRINT : ECRIVEZ '(' PRINTABLE ')' {}
 
 PRINTABLE : INT { printInt($1); } 
           | STRING { printString(string($1)); }
-          | FLOAT { printFloat(to_string($1)); }
+          | FLOAT { printFloat($1); }
           | IDENTIFIER { int offset = isValidIdentifier($1);
                          if(offset != -1) {
                                 printIdentifier(offset);
@@ -125,7 +125,7 @@ void storeInteger(int val, int offset) {
 }
 
 void storeFloat(float val, int offset) {
-        dataList = new Node (strdup(to_string(val).c_str()), Type::FLOAT_TYPE, dataList);
+        dataList = new Node (val, dataList);
         cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
         cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
 }
@@ -144,8 +144,8 @@ void printString(string val) {
         cout << "\tsyscall" << endl;
 }
 
-void printFloat(string val) {
-        dataList = new Node (strdup(val.c_str()), Type::STRING_TYPE, dataList);
+void printFloat(float val) {
+        dataList = new Node (val, dataList);
         cout << "\tli $v0,4" << endl;
         cout << "\tla $a0," << dataList->getUniqueName() << endl;
         cout << "\tsyscall" << endl;

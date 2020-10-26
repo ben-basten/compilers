@@ -7,6 +7,7 @@
 class Node {
 private:
 	char* data; // stores variable names or data list values
+	float flData;
 	std::string uniqueName; 
 	Node* next;
 	int offset = 4;
@@ -15,6 +16,7 @@ private:
 	int size();
 public:
 	Node(char* newData, Type newType, Node* oldList);
+	Node(float newData, Node* oldList);
 	Node * getNext();
 	int getOffset();
 	Type getType();
