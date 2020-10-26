@@ -39,7 +39,7 @@ MAIN : HEADER COMMANDS '}' { cout << "\tli $v0,10" << endl; // exit system call 
                              cout << "\tsyscall" << endl; 
                              cout << endl << "\t.data" << endl;
                              dataList->printData();
-                             varList->print();
+                             /* varList->print(); */
                            }
      | error '}' { yyerrok; }
      ;
@@ -157,6 +157,11 @@ void printIdentifier(int offset) {
                 case Type::INT_TYPE:
                         cout << "\tli $v0,1" << endl;
                         cout << "\tlw $a0,-" << var->getOffset() << "($fp)" << endl;
+                        cout << "\tsyscall" << endl;
+                        break;
+                case Type::FLOAT_TYPE:
+                        cout << "\tli $v0,2" << endl;
+                        cout << "\tl.s $f12,-" << var->getOffset() << "($fp)" << endl;
                         cout << "\tsyscall" << endl;
                         break;
         }

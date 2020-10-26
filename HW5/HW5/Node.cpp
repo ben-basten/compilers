@@ -58,6 +58,7 @@ void Node::printData() {
 	if(next != nullptr) next->printData();
 }
 
+// for debugging purposes - prints out what's in the list
 void Node::print() {
 	cout << data << " - ";
 	if(type == Type::INT_TYPE) cout << "int" << endl;
