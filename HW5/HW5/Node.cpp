@@ -24,24 +24,6 @@ int Node::getOffset () {return offset;}
 Type Node::getType() {return type;}
 
 string Node::getUniqueName() {return uniqueName;}
- 
-void Node::print() {
-	cout << data << " - ";
-	if(type == Type::INT_TYPE) cout << "int" << endl;
-	else cout << "float" << endl;
-
-	if(next != nullptr) next->print();
-}
-
-void Node::printData() {
-	if(type == Type::STRING_TYPE) {
-		cout << uniqueName << ":\t.asciiz \"" << data << "\"" << endl;
-	} else if (type == Type::FLOAT_TYPE) {
-		cout << uniqueName << ":\t.float " << data << endl;
-	}
-
-	if(next != nullptr) next->printData();
-}
 
 int Node::size() {
 	if(next == nullptr) return 1;
@@ -56,4 +38,30 @@ int Node::findOffset(char *findMe) {
 	} else {
 		return -1;
 	}
+}
+
+Node* Node::getNode(int findOffset) {
+	if(offset == findOffset) {
+		return this;
+	} else {
+		return next->getNode(findOffset); // assumes that the node exists
+	}
+}
+
+void Node::printData() {
+	if(type == Type::STRING_TYPE) {
+		cout << uniqueName << ":\t.asciiz \"" << data << "\"" << endl;
+	} else if (type == Type::FLOAT_TYPE) {
+		cout << uniqueName << ":\t.float " << data << endl;
+	}
+
+	if(next != nullptr) next->printData();
+}
+
+void Node::print() {
+	cout << data << " - ";
+	if(type == Type::INT_TYPE) cout << "int" << endl;
+	else cout << "float" << endl;
+
+	if(next != nullptr) next->print();
 }

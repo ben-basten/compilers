@@ -19,9 +19,10 @@ public:
 	int getOffset();
 	Type getType();
 	std::string getUniqueName();
-	void print();
-	void printData();
 	int findOffset(char *findMe); // returns offset if variable is found, -1 if not found
+	Node *getNode(int findOffset);
+	void printData();
+	void print();
 };
 
 
