@@ -86,8 +86,10 @@ DECLARATION : ENTIER VARLIST { /* defines an integer */ }
             | REEL VARLIST { /* defines a float */ }
             ;
 
-VARLIST : IDENTIFIER { varList = new Node ($1, static_cast<Type>($<i>0), varList); }
-        | VARLIST ',' IDENTIFIER { varList = new Node ($3, static_cast<Type>($<i>0), varList); }
+VARLIST : IDENTIFIER {  cout << "\tsub $sp,$sp,4" << endl;
+                        varList = new Node ($1, static_cast<Type>($<i>0), varList); }
+        | VARLIST ',' IDENTIFIER {  cout << "\tsub $sp,$sp,4" << endl;
+                                    varList = new Node ($3, static_cast<Type>($<i>0), varList); }
         ;
 
 PRINT : ECRIVEZ '(' PRINTABLE ')' {}
@@ -121,7 +123,13 @@ int isValidIdentifier(char *id) {
 
 void storeInteger(int val, int offset) {
         cout << "\tli $t0," << val << endl;
-        cout << "\tsw $t0,-" << offset << "($fp)" << endl;
+        if(val >= 0) {
+                cout << "\tsw $t0,-" << offset << "($fp)" << endl;
+        } else { // do weird stuff if it's negative
+                cout << "\tmtc1 $t0,$f0" << endl;
+                cout << "\tcvt.s.w $f0,$f0" << endl;
+                cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
+        }
 }
 
 void storeFloat(float val, int offset) {
