@@ -8,6 +8,7 @@ using namespace std;
 
 Node::Node(char* newData, Type newType, Node* oldList) {
 	data = newData;
+	toLower(data);
 	next = oldList;
 	type = newType;
 
@@ -38,7 +39,18 @@ int Node::size() {
 	else return 1 + next->size();
 }
 
+void Node::toLower(char *&val) {
+	int i = 0;
+	char temp;
+	while(val[i]) {
+		temp = val[i];
+		val[i] = tolower(temp);
+		i++;
+	}
+}
+
 int Node::findOffset(char *findMe) {
+	toLower(findMe);
 	if(strcmp(findMe, data) == 0) {
 		return offset;
 	} else if (next != nullptr) {

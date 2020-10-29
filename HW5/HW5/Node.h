@@ -13,7 +13,7 @@ private:
 	int offset = 4;
 	Type type;
 
-	int size();
+	void toLower(char *&val);
 public:
 	Node(char* newData, Type newType, Node* oldList);
 	Node(float newData, Node* oldList);
@@ -21,6 +21,7 @@ public:
 	int getOffset();
 	Type getType();
 	std::string getUniqueName();
+	int size();
 	int findOffset(char *findMe); // returns offset if variable is found, -1 if not found
 	Node *getNode(int findOffset);
 	void printData();

@@ -35,7 +35,8 @@ extern int lineno;
 %type <str> PRINTABLE
 
 %%
-MAIN : HEADER COMMANDS '}' { cout << "\tli $v0,10" << endl; // exit system call code
+MAIN : HEADER COMMANDS '}' { cout << "\tadd $sp,$sp," << varList->size() * 4 << endl;
+                             cout << "\tli $v0,10" << endl; // exit system call code
                              cout << "\tsyscall" << endl; 
                              cout << endl << "\t.data" << endl;
                              dataList->printData();
