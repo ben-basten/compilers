@@ -136,6 +136,9 @@ void storeInteger(int val, int offset) {
 void storeFloat(float val, int offset) {
         dataList = new Node (val, dataList);
         cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
+        if(varList->getNode(offset)->getType() == Type::INT_TYPE) {
+                cout << "\tcvt.w.s $f0,$f0" << endl;
+        }
         cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
 }
 
