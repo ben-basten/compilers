@@ -8,21 +8,13 @@ using namespace std;
 
 Node::Node(char* newData, Type newType, Node* oldList) {
 	data = newData;
-	toLower(data);
 	next = oldList;
 	type = newType;
 
 	if(newType == Type::STRING_TYPE) uniqueName = "str" + to_string(size());
 	else if (newType == Type::FLOAT_TYPE) uniqueName = "fl" + to_string(size());
+	else uniqueName = "error";
 
-	if(next != nullptr) offset = next->getOffset() + 4;
-}
-
-Node::Node(float newData, Node* oldList) {
-	flData = newData;
-	next = oldList;
-	type = Type::FLOAT_TYPE;
-	uniqueName = "fl" + to_string(size());
 	if(next != nullptr) offset = next->getOffset() + 4;
 }
 
@@ -76,7 +68,7 @@ void Node::printData() {
 	if(type == Type::STRING_TYPE) {
 		cout << uniqueName << ":\t.asciiz \"" << data << "\"" << endl;
 	} else if (type == Type::FLOAT_TYPE) {
-		cout << uniqueName << ":\t.float " << flData << endl; // assumes there is a value in flData
+		cout << uniqueName << ":\t.float " << data << endl; // assumes there is a value in flData
 	}
 
 	if(next != nullptr) next->printData();

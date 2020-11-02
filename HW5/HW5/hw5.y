@@ -9,11 +9,11 @@ using namespace std;
 int yylex ();
 int isValidIdentifier(char *id);
 void storeVariables(int leftOffset, int rightOffset);
-void storeInteger(int val, int offset);
-void storeFloat(float val, int offset);
-void printInt(int val);
+void storeInteger(char *val, int offset);
+void storeFloat(char *val, int offset);
+void printInt(char *val);
 void printString(string val);
-void printFloat(float val);
+void printFloat(char *val);
 void printIdentifier(int offset);
 void yyerror (const char *er);
 
@@ -29,9 +29,8 @@ extern int lineno;
 
 
 %token ECRIVEZ RIEN COMMENCEMENT 
-%token <str> STRING IDENTIFIER
-%token <i> INT ENTIER REEL
-%token <fl> FLOAT
+%token <str> STRING IDENTIFIER FLOAT INT
+%token <i> ENTIER REEL
 
 %type <str> PRINTABLE
 
@@ -146,7 +145,7 @@ void storeVariables(int leftOffset, int rightOffset) {
         }
 }
 
-void storeInteger(int val, int offset) {
+void storeInteger(char *val, int offset) {
         Type varType = varList->getType(offset);
 
         cout << "\tli $t0," << val << endl;
@@ -159,8 +158,8 @@ void storeInteger(int val, int offset) {
         }
 }
 
-void storeFloat(float val, int offset) {
-        dataList = new Node (val, dataList);
+void storeFloat(char *val, int offset) {
+        dataList = new Node (val, Type::FLOAT_TYPE, dataList);
         Type varType = varList->getType(offset);
 
         cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
@@ -170,7 +169,7 @@ void storeFloat(float val, int offset) {
         cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
 }
 
-void printInt(int val) {
+void printInt(char *val) {
         cout << "\tli $v0,1" << endl;
         cout << "\tli $a0," << val << endl;
         cout << "\tsyscall" << endl;
@@ -184,8 +183,8 @@ void printString(string val) {
         cout << "\tsyscall" << endl;
 }
 
-void printFloat(float val) {
-        dataList = new Node (val, dataList);
+void printFloat(char *val) {
+        dataList = new Node (val, Type::FLOAT_TYPE, dataList);
         cout << "\tli $v0,2" << endl;
         cout << "\tl.s $f12," << dataList->getUniqueName() << endl;
         cout << "\tsyscall" << endl;

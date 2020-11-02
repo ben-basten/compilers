@@ -36,8 +36,8 @@ err     [^\ \n\t]+
 {rien}      { yylval.str = _strdup(yytext); return RIEN; }
 {ent}       { yylval.i = 1; return ENTIER; }
 {reel}      { yylval.i = 2; return REEL; }
-{fp}        { yylval.fl = atof(yytext); return FLOAT; }
-{int}       { yylval.i = atoi(yytext); return INT; }
+{fp}        { yylval.str = _strdup(yytext); return FLOAT; }
+{int}       { yylval.str = _strdup(yytext); return INT; }
 {str}       { yylval.str = _strdup(yytext); return STRING; }
 {var}       { yylval.str = _strdup(yytext); return IDENTIFIER; }
 {single}    { lineno++; }
