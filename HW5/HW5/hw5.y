@@ -24,7 +24,6 @@ extern int lineno;
 %union {
  char *str; //a string in C
  int i;
- float fl;
 }
 
 
