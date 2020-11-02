@@ -2,9 +2,11 @@
 *.msi
 .vs
 *.vcxproj*
+*.vscode
 *.sln
 *.flex*
 *.tab*
+*.jpg
 
 hw5.exe
 HW5/HW5/*.in

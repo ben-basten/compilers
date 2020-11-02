@@ -8,6 +8,7 @@ using namespace std;
 
 int yylex ();
 int isValidIdentifier(char *id);
+void storeVariables(int leftOffset, int rightOffset);
 void storeInteger(int val, int offset);
 void storeFloat(float val, int offset);
 void printInt(int val);
@@ -35,12 +36,15 @@ extern int lineno;
 %type <str> PRINTABLE
 
 %%
-MAIN : HEADER COMMANDS '}' { cout << "\tadd $sp,$sp," << varList->size() * 4 << endl;
+MAIN : HEADER COMMANDS '}' { if(varList != nullptr) {
+                                cout << "\tadd $sp,$sp," << varList->size() * 4 << endl;
+                             }
                              cout << "\tli $v0,10" << endl; // exit system call code
                              cout << "\tsyscall" << endl; 
                              cout << endl << "\t.data" << endl;
-                             dataList->printData();
-                             /* varList->print(); */
+                             if(dataList != nullptr) {
+                                dataList->printData();
+                             }
                            }
      | error '}' { yyerrok; }
      ;
@@ -79,8 +83,10 @@ ASSIGNMENT : IDENTIFIER '=' STRING { isValidIdentifier($1); }
                                         storeInteger($3, offset);
                                   } 
                                 }
-           | IDENTIFIER '=' IDENTIFIER { isValidIdentifier($1);
-                                         isValidIdentifier($3); }
+           | IDENTIFIER '=' IDENTIFIER { int leftOffset, rightOffset;
+                                         leftOffset = isValidIdentifier($1);
+                                         rightOffset = isValidIdentifier($3);
+                                         storeVariables(leftOffset, rightOffset); }
            ;
 
 DECLARATION : ENTIER VARLIST { /* defines an integer */ }
@@ -93,7 +99,7 @@ VARLIST : IDENTIFIER {  cout << "\tsub $sp,$sp,4" << endl;
                                     varList = new Node ($3, static_cast<Type>($<i>0), varList); }
         ;
 
-PRINT : ECRIVEZ '(' PRINTABLE ')' {}
+PRINT : ECRIVEZ '(' PRINTABLE ')'
       | error ')' { yyerrok; }
       ; 
 
@@ -122,11 +128,31 @@ int isValidIdentifier(char *id) {
         return offset;
 }
 
+void storeVariables(int leftOffset, int rightOffset) {
+        Type leftType = varList->getType(leftOffset);
+        Type rightType = varList->getType(rightOffset);
+
+        if(leftType != rightType) {
+                cout << "\tl.s $f0,-" << rightOffset << "($fp)" << endl;
+                if(rightType == Type::INT_TYPE) {
+                        cout << "\tcvt.s.w $f0,$f0" << endl;
+                } else if (rightType == Type::FLOAT_TYPE) {
+                        cout << "\tcvt.w.s $f0,$f0" << endl;
+                }
+                cout << "\ts.s $f0,-" << leftOffset << "($fp)" << endl;
+        } else {
+                cout << "\tlw $t0,-" << rightOffset << "($fp)" << endl; 
+                cout << "\tsw $t0,-" << leftOffset << "($fp)" << endl;
+        }
+}
+
 void storeInteger(int val, int offset) {
+        Type varType = varList->getType(offset);
+
         cout << "\tli $t0," << val << endl;
-        if(val >= 0) {
+        if(varType == Type::INT_TYPE) {
                 cout << "\tsw $t0,-" << offset << "($fp)" << endl;
-        } else { // do weird stuff if it's negative
+        } else if (varType == Type::FLOAT_TYPE) {
                 cout << "\tmtc1 $t0,$f0" << endl;
                 cout << "\tcvt.s.w $f0,$f0" << endl;
                 cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
@@ -135,8 +161,10 @@ void storeInteger(int val, int offset) {
 
 void storeFloat(float val, int offset) {
         dataList = new Node (val, dataList);
+        Type varType = varList->getType(offset);
+
         cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
-        if(varList->getNode(offset)->getType() == Type::INT_TYPE) {
+        if(varType == Type::INT_TYPE) {
                 cout << "\tcvt.w.s $f0,$f0" << endl;
         }
         cout << "\ts.s $f0,-" << offset << "($fp)" << endl;

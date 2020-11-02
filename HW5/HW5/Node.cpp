@@ -32,6 +32,10 @@ int Node::getOffset () {return offset;}
 
 Type Node::getType() {return type;}
 
+Type Node::getType(int offset) {
+	return getNode(offset)->getType();
+}
+
 string Node::getUniqueName() {return uniqueName;}
 
 int Node::size() {
@@ -78,6 +82,7 @@ void Node::printData() {
 	if(next != nullptr) next->printData();
 }
 
+/*
 // for debugging purposes - prints out what's in the list
 void Node::print() {
 	cout << data << " - ";
@@ -86,3 +91,4 @@ void Node::print() {
 
 	if(next != nullptr) next->print();
 }
+*/

@@ -20,12 +20,12 @@ public:
 	Node * getNext();
 	int getOffset();
 	Type getType();
+	Type getType(int offset);
 	std::string getUniqueName();
 	int size();
 	int findOffset(char *findMe); // returns offset if variable is found, -1 if not found
 	Node *getNode(int findOffset);
 	void printData();
-	void print();
 };
 
 

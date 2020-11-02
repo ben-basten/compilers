@@ -15,15 +15,15 @@ int yyparse();
 letter  [A-Za-z]
 num     [0-9]
 ws      (" "|\t)+
-exp     e[-|+]?[1-9]+
+exp     e[-+]?[1-9]+
 
 ecr     [Ee][Cc][Rr][Ii][Vv][Ee][Zz]
 rien    [Rr][Ii][Ee][Nn]
 ent     [Ee][Nn][Tt][Ii][Ee][Rr]
 reel    [Rr][Ee][Ee][Ll]
 com     [Cc][Oo][Mm][Mm][Ee][Nn][Cc][Ee][Mm][Ee][Nn][Tt]
-int     [-|+]?(0|([1-9][0-9]*))
-fp      [-|+]?(((0|[1-9][0-9]*)\.[0-9]+{exp}?)|{int}{exp})
+int     [-+]?(0|([1-9][0-9]*))
+fp      [-+]?(((0|[1-9][0-9]*)\.[0-9]+{exp}?)|{int}{exp})
 var     {letter}({letter}|{num})*
 str     \"[^"\n]*\"
 single  "//"(.)*\n
