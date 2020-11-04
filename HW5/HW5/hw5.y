@@ -8,6 +8,7 @@ using namespace std;
 
 int yylex ();
 int isValidIdentifier(char *id);
+void declareVariable(char *identifier, int type);
 void storeVariables(int leftOffset, int rightOffset);
 void storeInteger(char *val, int offset);
 void storeFloat(char *val, int offset);
@@ -91,10 +92,8 @@ DECLARATION : ENTIER VARLIST { /* defines an integer */ }
             | REEL VARLIST { /* defines a float */ }
             ;
 
-VARLIST : IDENTIFIER {  cout << "\tsub $sp,$sp,4" << endl;
-                        varList = new Node ($1, static_cast<Type>($<i>0), varList); }
-        | VARLIST ',' IDENTIFIER {  cout << "\tsub $sp,$sp,4" << endl;
-                                    varList = new Node ($3, static_cast<Type>($<i>0), varList); }
+VARLIST : IDENTIFIER { declareVariable($1, $<i>0); }
+        | VARLIST ',' IDENTIFIER { declareVariable($3, $<i>0); }
         ;
 
 PRINT : ECRIVEZ '(' PRINTABLE ')'
@@ -119,11 +118,21 @@ int isValidIdentifier(char *id) {
         bool isEmpty = (varList == nullptr);
         if(!isEmpty) offset = varList->findOffset(id);
         if(!(!isEmpty && offset != -1)) {
-                string errMsg = "Identifier \"" + string(id) + "\" has not been declared yet in this scope.";
+                string errMsg = "Identifier \"" + string(id) + "\" has not been declared yet in this scope";
                 yyerror(errMsg.c_str());
                 return -1;
         } 
         return offset;
+}
+
+void declareVariable(char *identifier, int type) {
+        if(varList == nullptr || varList->findOffset(identifier) == -1) { // the variable doesn't already exist
+                cout << "\tsub $sp,$sp,4" << endl;
+                varList = new Node (identifier, static_cast<Type>(type), varList);
+        } else {
+                string errMsg = "variable redefinition";
+                yyerror(errMsg.c_str());
+        }  
 }
 
 void storeVariables(int leftOffset, int rightOffset) {
