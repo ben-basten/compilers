@@ -9,5 +9,5 @@
 *.jpg
 
 hw5.exe
-HW5/HW5/*.in
-HW5/HW5/*.asm
+03-declarations-and-assignments/*.in
+03-declarations-and-assignments/*.asm
