@@ -36,6 +36,7 @@ extern int lineno;
 %token <str> STRING IDENTIFIER FLOAT INT
 %token <i> ENTIER REEL
 %type <str> PRINTABLE
+%type <i> EXPRESSION
 
 %left '+' '-'
 %left '*' '/' '%'
@@ -88,6 +89,8 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { doMath(OpType::ADD); }
                    cout << "\tsub $sp,$sp,4" << endl;
                    cout << "\tsw $t0,($sp)" << endl;
                  }
+           | FLOAT
+           | IDENTIFIER
            ;
 
 STATEMENT : DECLARATION

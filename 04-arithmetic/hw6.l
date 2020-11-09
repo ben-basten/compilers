@@ -22,13 +22,12 @@ rien    [Rr][Ii][Ee][Nn]
 ent     [Ee][Nn][Tt][Ii][Ee][Rr]
 reel    [Rr][Ee][Ee][Ll]
 com     [Cc][Oo][Mm][Mm][Ee][Nn][Cc][Ee][Mm][Ee][Nn][Tt]
-int     [-+]?(0|([1-9][0-9]*))
-fp      [-+]?(((0|[1-9][0-9]*)\.[0-9]+{exp}?)|{int}{exp})
+int     (0|([1-9][0-9]*))
+fp      (((0|[1-9][0-9]*)\.[0-9]+{exp}?)|{int}{exp})
 var     {letter}({letter}|{num})*
 str     \"[^"\n]*\"
 single  "//"(.)*\n
 multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
-err     [^\ \n\t]+
 %%
 
 {com}       { yylval.str = _strdup(yytext); return COMMENCEMENT; }
