@@ -4,6 +4,7 @@
 #include <cstring>
 #include "Node.h"
 #include "Type.h"
+#include "OpType.h"
 using namespace std;
 
 int yylex ();
@@ -12,7 +13,8 @@ void declareVariable(char *identifier, int type);
 void storeVariables(int leftOffset, int rightOffset);
 void storeInteger(char *val, int offset);
 void storeFloat(char *val, int offset);
-void doMath();
+void doMath(OpType type);
+void doUnaryMinus();
 void printInt(char *val);
 void printString(string val);
 void printFloat(char *val);
@@ -74,13 +76,13 @@ COMMAND : STATEMENT ';'
         | error ';'
         ;
 
-EXPRESSION : EXPRESSION '+' EXPRESSION { doMath(); }
-           | EXPRESSION '-' EXPRESSION
-           | EXPRESSION '/' EXPRESSION
-           | EXPRESSION '%' EXPRESSION
-           | EXPRESSION '*' EXPRESSION
+EXPRESSION : EXPRESSION '+' EXPRESSION { doMath(OpType::ADD); }
+           | EXPRESSION '-' EXPRESSION { doMath(OpType::SUB); }
+           | EXPRESSION '/' EXPRESSION { doMath(OpType::DIV); } 
+           | EXPRESSION '%' EXPRESSION { doMath(OpType::MOD); }
+           | EXPRESSION '*' EXPRESSION { doMath(OpType::MULT); }
            | '(' EXPRESSION ')'
-           | '-' EXPRESSION %prec UMINUS
+           | '-' EXPRESSION %prec UMINUS { doUnaryMinus(); } 
            | '+' EXPRESSION %prec UMINUS
            | INT { cout << "\tli $t0," << $1 << endl;  
                    cout << "\tsub $sp,$sp,4" << endl;
@@ -199,21 +201,36 @@ void storeFloat(char *val, int offset) {
         cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
 }
 
-void doMath() {
-        //addition
+void doMath(OpType type) {
         cout << "\tlw $t1,($sp)" << endl;
         cout << "\tlw $t0,4($sp)" << endl;
-        if(true) { // if addition type
-                cout << "\tadd $t0,$t0,$t1" << endl;
-                /*
-                cout << "\tmul $t0,$t0,$t1" << endl;
-                cout << "\tdiv $t0,$t0,$t1" << endl;
-                cout << "\tsub $t0,$t0,$t1" << endl;
-                cout << "\trem $t0,$t0,$t1" << endl; //modulo
-                */
+        switch(type) {
+                case OpType::ADD: 
+                        cout << "\tadd $t0,$t0,$t1" << endl;
+                        break;
+                case OpType::SUB:
+                        cout << "\tsub $t0,$t0,$t1" << endl;
+                        break;
+                case OpType::MULT:
+                        cout << "\tmul $t0,$t0,$t1" << endl;
+                        break;
+                case OpType::DIV:
+                        cout << "\tdiv $t0,$t0,$t1" << endl;
+                        break;
+                case OpType::MOD:
+                        cout << "\trem $t0,$t0,$t1" << endl; //modulo
+                        break;
         }
         cout << "\tsw $t0,4($sp)" << endl;
         cout << "\tadd $sp,$sp,4" << endl;
+}
+
+void doUnaryMinus() {
+        cout << "\tsub $sp,$sp,4" << endl;
+        cout << "\tsw $t0,($sp)" << endl;
+        cout << "\tlw $t0,($sp)" << endl;
+        cout << "\tneg $t0,$t0" << endl;
+        cout << "\tsw $t0,($sp)" << endl;
 }
 
 void printInt(char *val) {
