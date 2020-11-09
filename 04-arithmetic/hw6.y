@@ -12,6 +12,7 @@ void declareVariable(char *identifier, int type);
 void storeVariables(int leftOffset, int rightOffset);
 void storeInteger(char *val, int offset);
 void storeFloat(char *val, int offset);
+void doMath();
 void printInt(char *val);
 void printString(string val);
 void printFloat(char *val);
@@ -29,10 +30,14 @@ extern int lineno;
 
 
 %token ECRIVEZ RIEN COMMENCEMENT 
+
 %token <str> STRING IDENTIFIER FLOAT INT
 %token <i> ENTIER REEL
-
 %type <str> PRINTABLE
+
+%left '+' '-'
+%left '*' '/' '%'
+%nonassoc UMINUS
 
 %%
 MAIN : HEADER COMMANDS '}' { if(varList != nullptr) {
@@ -49,9 +54,11 @@ MAIN : HEADER COMMANDS '}' { if(varList != nullptr) {
      ;
 
 HEADER : RIEN COMMENCEMENT '(' PARAMS ')' '{' { cout << "\t.text" << endl;
-                                              cout << "\t.globl main" << endl;
-                                              cout << "main:" << endl;
-                                              cout << "\tmove $fp,$sp" << endl; }
+                                                cout << "\t.globl main" << endl;
+                                                cout << "main:" << endl;
+                                                cout << "\tmove $fp,$sp" << endl;
+                                                cout << "\tsub $sp,$sp,4" << endl;
+                                              }
        | error '{' { yyerrok; }
        ;
 
@@ -63,8 +70,23 @@ COMMANDS : COMMANDS COMMAND
          ;
 
 COMMAND : STATEMENT ';'
+        | EXPRESSION ';'
         | error ';'
         ;
+
+EXPRESSION : EXPRESSION '+' EXPRESSION { doMath(); }
+           | EXPRESSION '-' EXPRESSION
+           | EXPRESSION '/' EXPRESSION
+           | EXPRESSION '%' EXPRESSION
+           | EXPRESSION '*' EXPRESSION
+           | '(' EXPRESSION ')'
+           | '-' EXPRESSION %prec UMINUS
+           | '+' EXPRESSION %prec UMINUS
+           | INT { cout << "\tli $t0," << $1 << endl;  
+                   cout << "\tsub $sp,$sp,4" << endl;
+                   cout << "\tsw $t0,($sp)" << endl;
+                 }
+           ;
 
 STATEMENT : DECLARATION
           | ASSIGNMENT
@@ -175,6 +197,23 @@ void storeFloat(char *val, int offset) {
                 cout << "\tcvt.w.s $f0,$f0" << endl;
         }
         cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
+}
+
+void doMath() {
+        //addition
+        cout << "\tlw $t1,($sp)" << endl;
+        cout << "\tlw $t0,4($sp)" << endl;
+        if(true) { // if addition type
+                cout << "\tadd $t0,$t0,$t1" << endl;
+                /*
+                cout << "\tmul $t0,$t0,$t1" << endl;
+                cout << "\tdiv $t0,$t0,$t1" << endl;
+                cout << "\tsub $t0,$t0,$t1" << endl;
+                cout << "\trem $t0,$t0,$t1" << endl; //modulo
+                */
+        }
+        cout << "\tsw $t0,4($sp)" << endl;
+        cout << "\tadd $sp,$sp,4" << endl;
 }
 
 void printInt(char *val) {
