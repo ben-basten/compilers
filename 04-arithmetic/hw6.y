@@ -13,8 +13,8 @@ void declareVariable(char *identifier, int type);
 void storeVariables(int leftOffset, int rightOffset);
 void storeInteger(char *val, int offset);
 void storeFloat(char *val, int offset);
-void doMath(OpType type);
-void doUnaryMinus();
+void doMath(OpType type, Type leftType, Type rightType);
+void doUnaryMinus(Type numType);
 void printInt(char *val);
 void printString(string val);
 void printFloat(char *val);
@@ -77,20 +77,41 @@ COMMAND : STATEMENT ';'
         | error ';'
         ;
 
-EXPRESSION : EXPRESSION '+' EXPRESSION { doMath(OpType::ADD); }
-           | EXPRESSION '-' EXPRESSION { doMath(OpType::SUB); }
-           | EXPRESSION '/' EXPRESSION { doMath(OpType::DIV); } 
-           | EXPRESSION '%' EXPRESSION { doMath(OpType::MOD); }
-           | EXPRESSION '*' EXPRESSION { doMath(OpType::MULT); }
-           | '(' EXPRESSION ')'
-           | '-' EXPRESSION %prec UMINUS { doUnaryMinus(); } 
-           | '+' EXPRESSION %prec UMINUS
-           | INT { cout << "\tli $t0," << $1 << endl;  
+EXPRESSION : EXPRESSION '+' EXPRESSION { doMath(OpType::ADD, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION '-' EXPRESSION { doMath(OpType::SUB, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION '/' EXPRESSION { doMath(OpType::DIV, static_cast<Type>($1), static_cast<Type>($3)); } 
+           | EXPRESSION '%' EXPRESSION { doMath(OpType::MOD, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION '*' EXPRESSION { doMath(OpType::MULT, static_cast<Type>($1), static_cast<Type>($3)); }
+           | '(' EXPRESSION ')' {}
+           | '-' EXPRESSION %prec UMINUS { doUnaryMinus(static_cast<Type>($2)); } 
+           | '+' EXPRESSION %prec UMINUS {}
+           | INT { $$ = 1;
+                   cout << "\tli $t0," << $1 << endl;  
                    cout << "\tsub $sp,$sp,4" << endl;
                    cout << "\tsw $t0,($sp)" << endl;
                  }
-           | FLOAT
-           | IDENTIFIER
+           | FLOAT { $$ = 2;
+                     dataList = new Node ($1, Type::FLOAT_TYPE, dataList);
+                     cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
+                     cout << "\tsub $sp,$sp,4" << endl;
+                     cout << "\ts.s $f0,($sp)" << endl;
+                   }
+           | IDENTIFIER { int offset = isValidIdentifier($1); 
+                          if (offset != -1) {
+                                Type type = varList->getType(offset);
+                                if(type == Type::INT_TYPE) {
+                                        $$ = 1;
+                                        cout << "\tlw $t0,-" << offset << "($fp)" << endl;
+                                        cout << "\tsub $sp,$sp,4" << endl;
+                                        cout << "\tsw $t0,($sp)" << endl;
+                                } else if (type == Type::FLOAT_TYPE) {
+                                        $$ = 2;
+                                        cout << "\tl.s $f0,-" << offset << "($fp)" << endl;
+                                        cout << "\tsub $sp,$sp,4" << endl;
+                                        cout << "\ts.s $f0,($sp)" << endl;
+                                }
+                          }
+                        }
            ;
 
 STATEMENT : DECLARATION
@@ -204,36 +225,69 @@ void storeFloat(char *val, int offset) {
         cout << "\ts.s $f0,-" << offset << "($fp)" << endl;
 }
 
-void doMath(OpType type) {
-        cout << "\tlw $t1,($sp)" << endl;
-        cout << "\tlw $t0,4($sp)" << endl;
-        switch(type) {
-                case OpType::ADD: 
-                        cout << "\tadd $t0,$t0,$t1" << endl;
-                        break;
-                case OpType::SUB:
-                        cout << "\tsub $t0,$t0,$t1" << endl;
-                        break;
-                case OpType::MULT:
-                        cout << "\tmul $t0,$t0,$t1" << endl;
-                        break;
-                case OpType::DIV:
-                        cout << "\tdiv $t0,$t0,$t1" << endl;
-                        break;
-                case OpType::MOD:
-                        cout << "\trem $t0,$t0,$t1" << endl; //modulo
-                        break;
+void doMath(OpType op, Type leftType, Type rightType) {
+        if(leftType == Type::INT_TYPE && rightType == Type::INT_TYPE) {
+                cout << "\tlw $t1,($sp)" << endl;
+                cout << "\tlw $t0,4($sp)" << endl;
+                switch(op) {
+                        case OpType::ADD: 
+                                cout << "\tadd $t0,$t0,$t1" << endl;
+                                break;
+                        case OpType::SUB:
+                                cout << "\tsub $t0,$t0,$t1" << endl;
+                                break;
+                        case OpType::MULT:
+                                cout << "\tmul $t0,$t0,$t1" << endl;
+                                break;
+                        case OpType::DIV:
+                                cout << "\tdiv $t0,$t0,$t1" << endl;
+                                break;
+                        case OpType::MOD:
+                                cout << "\trem $t0,$t0,$t1" << endl; //modulo
+                                break;
+                }
+                cout << "\tsw $t0,4($sp)" << endl;
+                cout << "\tadd $sp,$sp,4" << endl;
+        } else if (op == OpType::MOD) {
+                string errMsg = "modulo can only be performed on integer types";
+                yyerror(errMsg.c_str());
+        } else { // one side is a float, the other is an int
+                cout << "\tl.s $f2,($sp)" << endl;
+                cout << "\tl.s $f0,4($sp)" << endl;
+                if (leftType == Type::FLOAT_TYPE) { // left side = float, ride side = int
+                        cout << "\tcvt.s.w $f2,$f2" << endl;
+                } else { // left side = int, right side = float
+                        cout << "\tcvt.s.w $f0,$f0" << endl;
+                }
+                switch(op) {
+                        case OpType::ADD: 
+                                cout << "\tadd.s $f0,$f0,$f2" << endl;
+                                break;
+                        case OpType::SUB:
+                                cout << "\tsub.s $f0,$f0,$f2" << endl;
+                                break;
+                        case OpType::MULT:
+                                cout << "\tmul.s $f0,$f0,$f2" << endl;
+                                break;
+                        case OpType::DIV:
+                                cout << "\tdiv.s $f0,$f0,$f2" << endl;
+                                break;
+                }
+                cout << "\ts.s $f0,4($sp)" << endl;
+                cout << "\tadd $sp,$sp,4" << endl;
         }
-        cout << "\tsw $t0,4($sp)" << endl;
-        cout << "\tadd $sp,$sp,4" << endl;
 }
 
-void doUnaryMinus() {
-        cout << "\tsub $sp,$sp,4" << endl;
-        cout << "\tsw $t0,($sp)" << endl;
-        cout << "\tlw $t0,($sp)" << endl;
-        cout << "\tneg $t0,$t0" << endl;
-        cout << "\tsw $t0,($sp)" << endl;
+void doUnaryMinus(Type numType) {
+        if(numType == Type::INT_TYPE) {
+                cout << "\tlw $t0,($sp)" << endl;
+                cout << "\tneg $t0,$t0" << endl;
+                cout << "\tsw $t0,($sp)" << endl;
+        } else if (numType == Type::FLOAT_TYPE) {
+                cout << "\tl.s $f0,($sp)" << endl;
+                cout << "\tneg.s $f0,$f0" << endl;
+                cout << "\ts.s $f0,($sp)" << endl;
+        }
 }
 
 void printInt(char *val) {
