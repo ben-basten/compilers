@@ -47,7 +47,9 @@ void Node::toLower(char *&val) {
 
 int Node::findOffset(char *findMe) {
 	toLower(findMe);
-	if(strcmp(findMe, data) == 0) {
+	char* tempData = data;
+	toLower(tempData);
+	if(strcmp(findMe, tempData) == 0) {
 		return offset;
 	} else if (next != nullptr) {
 		return next->findOffset(findMe);
