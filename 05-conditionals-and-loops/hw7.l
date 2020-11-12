@@ -22,6 +22,9 @@ rien    [Rr][Ii][Ee][Nn]
 ent     [Ee][Nn][Tt][Ii][Ee][Rr]
 reel    [Rr][Ee][Ee][Ll]
 com     [Cc][Oo][Mm][Mm][Ee][Nn][Cc][Ee][Mm][Ee][Nn][Tt]
+pen     [Pp][Ee][Nn][Dd][Aa][Nn][Tt]
+si      [Ss][Ii]
+sinon   [Ss][Ii][Nn][Oo][Nn]
 int     (0|([1-9][0-9]*))
 fp      (((0|[1-9][0-9]*)\.[0-9]+{exp}?)|{int}{exp})
 var     {letter}({letter}|{num})*
@@ -33,6 +36,9 @@ multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
 {com}       { yylval.str = _strdup(yytext); return COMMENCEMENT; }
 {ecr}       { yylval.str = _strdup(yytext); return ECRIVEZ; }
 {rien}      { yylval.str = _strdup(yytext); return RIEN; }
+{pen}       { yylval.str = _strdup(yytext); return PENDANT; }
+{si}        { yylval.str = _strdup(yytext); return SI; }
+{sinon}     { yylval.str = _strdup(yytext); return SINON; }
 {ent}       { yylval.i = 1; return ENTIER; }
 {reel}      { yylval.i = 2; return REEL; }
 {fp}        { yylval.str = _strdup(yytext); return FLOAT; }

@@ -8,8 +8,10 @@
 *.tab*
 *.jpg
 *.asm
-
 hw*.exe
+
+todo
+
 03-declarations-and-assignments/*.in
 03-declarations-and-assignments/*.asm
 04-arithmetic/*.in

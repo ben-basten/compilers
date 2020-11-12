@@ -28,7 +28,7 @@ extern int lineno;
 }
 
 
-%token ECRIVEZ RIEN COMMENCEMENT 
+%token ECRIVEZ RIEN COMMENCEMENT PENDANT SI SINON
 
 %token <str> STRING IDENTIFIER FLOAT INT
 %token <i> ENTIER REEL
@@ -36,7 +36,10 @@ extern int lineno;
 
 %left '+' '-'
 %left '*' '/' '%'
+
 %nonassoc UMINUS
+%nonassoc LOWER_THAN_SINON
+%nonassoc SINON
 
 %%
 MAIN : HEADER COMMANDS '}' { if(varList != nullptr) {
@@ -115,10 +118,9 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
 STATEMENT : DECLARATION
           | ASSIGNMENT
           | PRINT
+          | IF
+          | WHILE
           ;
-
-ASSIGNMENT : IDENTIFIER '=' EXPRESSION { assignVariable($1, static_cast<Type>($3)); }
-           ;
 
 DECLARATION : ENTIER VARLIST { /* defines an integer */ }
             | REEL VARLIST { /* defines a float */ }
@@ -127,6 +129,16 @@ DECLARATION : ENTIER VARLIST { /* defines an integer */ }
 VARLIST : IDENTIFIER { declareVariable($1, $<i>0); }
         | VARLIST ',' IDENTIFIER { declareVariable($3, $<i>0); }
         ;
+
+ASSIGNMENT : IDENTIFIER '=' EXPRESSION { assignVariable($1, static_cast<Type>($3)); }
+           ;
+
+IF : SI '(' EXPRESSION ')' STATEMENT %prec LOWER_THAN_SINON
+   | SI '(' EXPRESSION ')' STATEMENT SINON STATEMENT
+   ;
+
+WHILE : PENDANT '(' EXPRESSION ')' STATEMENT
+      ;
 
 PRINT : ECRIVEZ '(' STRING ')' { printString(string($3)); }
       | ECRIVEZ '(' EXPRESSION ')' { printExpression(static_cast<Type>($3)); }
