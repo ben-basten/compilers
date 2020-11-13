@@ -25,6 +25,12 @@ com     [Cc][Oo][Mm][Mm][Ee][Nn][Cc][Ee][Mm][Ee][Nn][Tt]
 pen     [Pp][Ee][Nn][Dd][Aa][Nn][Tt]
 si      [Ss][Ii]
 sinon   [Ss][Ii][Nn][Oo][Nn]
+le      \<=
+ge      >=
+eq      ==
+neq     !=
+and     &&
+or      \|\|
 int     (0|([1-9][0-9]*))
 fp      (((0|[1-9][0-9]*)\.[0-9]+{exp}?)|{int}{exp})
 var     {letter}({letter}|{num})*
@@ -39,6 +45,12 @@ multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
 {pen}       { yylval.str = _strdup(yytext); return PENDANT; }
 {si}        { yylval.str = _strdup(yytext); return SI; }
 {sinon}     { yylval.str = _strdup(yytext); return SINON; }
+{le}        { yylval.str = _strdup(yytext); return LE; }
+{ge}        { yylval.str = _strdup(yytext); return GE; }
+{eq}        { yylval.str = _strdup(yytext); return EQ; }
+{neq}       { yylval.str = _strdup(yytext); return NEQ; }
+{and}       { yylval.str = _strdup(yytext); return AND; }
+{or}        { yylval.str = _strdup(yytext); return OR; }
 {ent}       { yylval.i = 1; return ENTIER; }
 {reel}      { yylval.i = 2; return REEL; }
 {fp}        { yylval.str = _strdup(yytext); return FLOAT; }

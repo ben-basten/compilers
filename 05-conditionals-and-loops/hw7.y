@@ -21,6 +21,8 @@ void yyerror (const char *er);
 Node *dataList = nullptr; // keeps list of strings to print in .data section
 Node *varList = nullptr; // symbol table of all of the declared variables
 extern int lineno;
+int labelCount = 0;
+
 %}
 %union {
  char *str; //a string in C
@@ -28,16 +30,20 @@ extern int lineno;
 }
 
 
-%token ECRIVEZ RIEN COMMENCEMENT PENDANT SI SINON
-
+%token ECRIVEZ RIEN COMMENCEMENT SINON LE GE EQ NEQ AND OR
 %token <str> STRING IDENTIFIER FLOAT INT
-%token <i> ENTIER REEL
+%token <i> ENTIER REEL SI PENDANT
+
 %type <i> EXPRESSION
 
+%left OR
+%left AND
+%left EQ NEQ
+%left '<' '>' LE GE
 %left '+' '-'
 %left '*' '/' '%'
 
-%nonassoc UMINUS
+%nonassoc UMINUS NOT
 %nonassoc LOWER_THAN_SINON
 %nonassoc SINON
 
@@ -115,6 +121,16 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
                         }
            ;
 
+CONDITIONAL : EXPRESSION '<' EXPRESSION
+            | EXPRESSION '>' EXPRESSION
+            | EXPRESSION LE EXPRESSION
+            | EXPRESSION GE EXPRESSION
+            | EXPRESSION EQ EXPRESSION
+            | EXPRESSION NEQ EXPRESSION
+            | CONDITIONAL AND CONDITIONAL
+            | CONDITIONAL OR CONDITIONAL
+            ;
+
 STATEMENT : DECLARATION
           | ASSIGNMENT
           | PRINT
@@ -133,11 +149,17 @@ VARLIST : IDENTIFIER { declareVariable($1, $<i>0); }
 ASSIGNMENT : IDENTIFIER '=' EXPRESSION { assignVariable($1, static_cast<Type>($3)); }
            ;
 
-IF : SI '(' EXPRESSION ')' STATEMENT %prec LOWER_THAN_SINON
-   | SI '(' EXPRESSION ')' STATEMENT SINON STATEMENT
+IF : SI COUNT '(' EXPRESSION ')' STATEMENT %prec LOWER_THAN_SINON
+   | SI COUNT '(' EXPRESSION ')' STATEMENT SINON STATEMENT
    ;
 
-WHILE : PENDANT '(' EXPRESSION ')' STATEMENT
+COUNT : { labelCount++;
+           $<i>0 = labelCount; 
+         } 
+       ;
+
+WHILE : PENDANT COUNT { cout << "_begwhile" << labelCount << ":" << endl; } '(' CONDITIONAL ')' '{' COMMANDS '}'
+      | error '}'
       ;
 
 PRINT : ECRIVEZ '(' STRING ')' { printString(string($3)); }
