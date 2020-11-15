@@ -12,6 +12,7 @@ int isValidIdentifier(char *id);
 void declareVariable(char *identifier, int type);
 void assignVariable(char *identifier, Type rightType);
 int doMath(OpType type, Type leftType, Type rightType);
+void doComparison(OpType type, Type leftType, Type rightType);
 void doUnaryMinus(Type numType);
 void printExpression(Type exprType);
 void printString(string val);
@@ -65,7 +66,6 @@ HEADER : RIEN COMMENCEMENT '(' PARAMS ')' '{' { cout << "\t.text" << endl;
                                                 cout << "\t.globl main" << endl;
                                                 cout << "main:" << endl;
                                                 cout << "\tmove $fp,$sp" << endl;
-                                                cout << "\tsub $sp,$sp,4" << endl;
                                               }
        | error '{' { yyerrok; }
        ;
@@ -119,17 +119,16 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
                                 }
                           }
                         }
+           | EXPRESSION '<' EXPRESSION { $$ = 1; doComparison(OpType::LT, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION '>' EXPRESSION { $$ = 1; doComparison(OpType::GT, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION LE EXPRESSION { $$ = 1; doComparison(OpType::LTE, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION GE EXPRESSION { $$ = 1; doComparison(OpType::GTE, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION EQ EXPRESSION { $$ = 1; doComparison(OpType::EQUAL, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION NEQ EXPRESSION { $$ = 1; doComparison(OpType::NEQUAL, static_cast<Type>($1), static_cast<Type>($3)); }
+           | EXPRESSION AND EXPRESSION {}
+           | EXPRESSION OR EXPRESSION {}
+           | '!' '(' EXPRESSION ')' {}
            ;
-
-CONDITIONAL : EXPRESSION '<' EXPRESSION
-            | EXPRESSION '>' EXPRESSION
-            | EXPRESSION LE EXPRESSION
-            | EXPRESSION GE EXPRESSION
-            | EXPRESSION EQ EXPRESSION
-            | EXPRESSION NEQ EXPRESSION
-            | CONDITIONAL AND CONDITIONAL
-            | CONDITIONAL OR CONDITIONAL
-            ;
 
 STATEMENT : DECLARATION
           | ASSIGNMENT
@@ -158,7 +157,7 @@ COUNT : { labelCount++;
          } 
        ;
 
-WHILE : PENDANT COUNT { cout << "_begwhile" << labelCount << ":" << endl; } '(' CONDITIONAL ')' '{' COMMANDS '}'
+WHILE : PENDANT COUNT { cout << "_begwhile" << labelCount << ":" << endl; } '(' EXPRESSION ')' '{' COMMANDS '}'
       | error '}'
       ;
 
@@ -272,6 +271,14 @@ int doMath(OpType op, Type leftType, Type rightType) {
                 cout << "\tadd $sp,$sp,4" << endl;
         }
         return finalType;
+}
+
+void doComparison(OpType type, Type leftType, Type rightType) {
+        // both floats, for now
+        cout << "\tl.s $f2,($sp)" << endl;
+        cout << "\tl.s $f0,4($sp)" << endl;
+        cout << "\tc.lt.s $f0,$f2" << endl;
+        cout << "\tbc1t _cmp2" << endl; // bc1t jumps to that branch if the comparison is true
 }
 
 void doUnaryMinus(Type numType) {
