@@ -77,7 +77,7 @@ COMMANDS : COMMANDS COMMAND
          |
          ;
 
-COMMAND : STATEMENT ';'
+COMMAND : STATEMENT
         | EXPRESSION ';'
         | error ';'
         ;
@@ -130,9 +130,9 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
            | '!' '(' EXPRESSION ')' {}
            ;
 
-STATEMENT : DECLARATION
-          | ASSIGNMENT
-          | PRINT
+STATEMENT : DECLARATION ';'
+          | ASSIGNMENT ';'
+          | PRINT ';'
           | IF
           | WHILE
           ;
@@ -148,14 +148,17 @@ VARLIST : IDENTIFIER { declareVariable($1, $<i>0); }
 ASSIGNMENT : IDENTIFIER '=' EXPRESSION { assignVariable($1, static_cast<Type>($3)); }
            ;
 
-IF : SI COUNT '(' EXPRESSION ')' STATEMENT %prec LOWER_THAN_SINON
-   | SI COUNT '(' EXPRESSION ')' STATEMENT SINON STATEMENT
+IF : SI COUNT '(' EXPRESSION ')' FALSEIF '{' COMMANDS '}' { cout << "_falseif" << $1 << ":" << endl; } %prec LOWER_THAN_SINON
+   | SI COUNT '(' EXPRESSION ')' FALSEIF COMMANDS SINON STATEMENT
    ;
 
 COUNT : { labelCount++;
-           $<i>0 = labelCount; 
-         } 
+          $<i>0 = labelCount; 
+        } 
        ;
+
+FALSEIF: { cout << "\tbeq $t0,0,_falseif" << $<i>-4 << endl; } 
+     ;
 
 WHILE : PENDANT COUNT { cout << "_begwhile" << labelCount << ":" << endl; } '(' EXPRESSION ')' '{' COMMANDS '}'
       | error '}'
@@ -274,11 +277,15 @@ int doMath(OpType op, Type leftType, Type rightType) {
 }
 
 void doComparison(OpType type, Type leftType, Type rightType) {
-        // both floats, for now
-        cout << "\tl.s $f2,($sp)" << endl;
-        cout << "\tl.s $f0,4($sp)" << endl;
-        cout << "\tc.lt.s $f0,$f2" << endl;
-        cout << "\tbc1t _cmp2" << endl; // bc1t jumps to that branch if the comparison is true
+        if(leftType == Type::INT_TYPE && rightType == Type::INT_TYPE) {
+                cout << "\tlw $t1,($sp)" << endl;
+                cout << "\tlw $t0,4($sp)" << endl;
+                cout << "\tsgt $t0,$t0,$t1" << endl;
+                cout << "\tsw $t0,4($sp)" << endl;
+                cout << "\tadd $sp,$sp,4" << endl;
+                cout << "\tlw $t0,($sp)" << endl;
+                cout << "\tadd $sp,$sp,4" << endl;
+        }
 }
 
 void doUnaryMinus(Type numType) {
