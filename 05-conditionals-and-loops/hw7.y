@@ -14,6 +14,7 @@ void assignVariable(char *identifier, Type rightType);
 int doMath(OpType type, Type leftType, Type rightType);
 void doComparison(OpType type, Type leftType, Type rightType);
 void doUnaryMinus(Type numType);
+void skipAndOr(OpType opType, int count);
 void printExpression(Type exprType);
 void printString(string val);
 void printIdentifier(int offset);
@@ -31,9 +32,9 @@ int labelCount = 0;
 }
 
 
-%token ECRIVEZ RIEN COMMENCEMENT SINON LE GE EQ NEQ AND OR
+%token ECRIVEZ RIEN COMMENCEMENT SINON LE GE EQ NEQ
 %token <str> STRING IDENTIFIER FLOAT INT
-%token <i> ENTIER REEL SI PENDANT
+%token <i> ENTIER REEL SI PENDANT AND OR
 
 %type <i> EXPRESSION
 
@@ -44,7 +45,7 @@ int labelCount = 0;
 %left '+' '-'
 %left '*' '/' '%'
 
-%nonassoc UMINUS NOT
+%nonassoc UMINUS
 %nonassoc LOWER_THAN_SINON
 %nonassoc SINON
 
@@ -125,8 +126,8 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
            | EXPRESSION GE EXPRESSION { $$ = 1; doComparison(OpType::GTE, static_cast<Type>($1), static_cast<Type>($3)); }
            | EXPRESSION EQ EXPRESSION { $$ = 1; doComparison(OpType::EQUAL, static_cast<Type>($1), static_cast<Type>($3)); }
            | EXPRESSION NEQ EXPRESSION { $$ = 1; doComparison(OpType::NEQUAL, static_cast<Type>($1), static_cast<Type>($3)); }
-           | EXPRESSION AND EXPRESSION {}
-           | EXPRESSION OR EXPRESSION {}
+           | EXPRESSION AND { labelCount++; $2 = labelCount; skipAndOr(OpType::AND, $2); } EXPRESSION { $$ = 1; cout << "_skipand" << $2 << ":" << endl; }
+           | EXPRESSION OR { labelCount++; $2 = labelCount; skipAndOr(OpType::OR, $2); } EXPRESSION { $$ = 1; cout << "_skipor" << $2 << ":" << endl; }
            | '!' '(' EXPRESSION ')' {}
            ;
 
@@ -149,7 +150,8 @@ ASSIGNMENT : IDENTIFIER '=' EXPRESSION { assignVariable($1, static_cast<Type>($3
            ;
 
 IF : SI COUNT '(' EXPRESSION ')' FALSEIF '{' COMMANDS '}' { cout << "_falseif" << $1 << ":" << endl; } %prec LOWER_THAN_SINON
-   | SI COUNT '(' EXPRESSION ')' FALSEIF COMMANDS SINON STATEMENT
+   | SI COUNT '(' EXPRESSION ')' FALSEIF COMMAND { cout << "_falseif" << $1 << ":" << endl; } %prec LOWER_THAN_SINON
+   | SI COUNT '(' EXPRESSION ')' FALSEIF COMMAND { cout << "\tb _endif" << $1 << endl; cout << "_falseif" << $1 << ":" << endl; } SINON COMMAND { cout << "_endif" << $1 << ":" << endl; }
    ;
 
 COUNT : { labelCount++;
@@ -157,12 +159,25 @@ COUNT : { labelCount++;
         } 
        ;
 
-FALSEIF: { cout << "\tbeq $t0,0,_falseif" << $<i>-4 << endl; } 
-     ;
+FALSEIF : { cout << "\tlw $t0,($sp)" << endl;
+            cout << "\tadd $sp,$sp,4" << endl;
+            cout << "\tbeq $t0,0,_falseif" << $<i>-4 << endl; } 
+        ;
 
-WHILE : PENDANT COUNT { cout << "_begwhile" << labelCount << ":" << endl; } '(' EXPRESSION ')' '{' COMMANDS '}'
+WHILE : PENDANT COUNTWHILE '(' EXPRESSION ')' ENDWHILE '{' COMMANDS '}' { cout << "\tb _begwhile" << $1 << endl; cout << "_endwhile" << $1 << ":" << endl; }
       | error '}'
       ;
+
+COUNTWHILE : { labelCount++;
+               $<i>0 = labelCount; 
+               cout << "_begwhile" << labelCount << ":" << endl; 
+             }
+         ;
+
+ENDWHILE : { cout << "\tlw $t0,($sp)" << endl;
+             cout << "\tadd $sp,$sp,4" << endl;
+             cout << "\tbeq $t0,0,_endwhile" << $<i>-4 << endl; }
+         ;
 
 PRINT : ECRIVEZ '(' STRING ')' { printString(string($3)); }
       | ECRIVEZ '(' EXPRESSION ')' { printExpression(static_cast<Type>($3)); }
@@ -276,14 +291,31 @@ int doMath(OpType op, Type leftType, Type rightType) {
         return finalType;
 }
 
-void doComparison(OpType type, Type leftType, Type rightType) {
+void doComparison(OpType opType, Type leftType, Type rightType) {
         if(leftType == Type::INT_TYPE && rightType == Type::INT_TYPE) {
                 cout << "\tlw $t1,($sp)" << endl;
                 cout << "\tlw $t0,4($sp)" << endl;
-                cout << "\tsgt $t0,$t0,$t1" << endl;
+                switch (opType) {
+                        case OpType::LT:
+                                cout << "\tslt $t0,$t0,$t1" << endl;
+                                break;       
+                        case OpType::GT:
+                                cout << "\tsgt $t0,$t0,$t1" << endl;               
+                                break;
+                        case OpType::LTE:
+                                cout << "\tsle $t0,$t0,$t1" << endl;
+                                break;
+                        case OpType::GTE:
+                                cout << "\tsge $t0,$t0,$t1" << endl;
+                                break;
+                        case OpType::EQUAL:
+                                cout << "\tseq $t0,$t0,$t1" << endl;
+                                break;
+                        case OpType::NEQUAL:
+                                cout << "\tsne $t0,$t0,$t1" << endl;
+                                break;
+                }
                 cout << "\tsw $t0,4($sp)" << endl;
-                cout << "\tadd $sp,$sp,4" << endl;
-                cout << "\tlw $t0,($sp)" << endl;
                 cout << "\tadd $sp,$sp,4" << endl;
         }
 }
@@ -298,6 +330,16 @@ void doUnaryMinus(Type numType) {
                 cout << "\tneg.s $f0,$f0" << endl;
                 cout << "\ts.s $f0,($sp)" << endl;
         }
+}
+
+void skipAndOr(OpType opType, int count) {
+        cout << "\tlw $t0,($sp)" << endl;
+        if (opType == OpType::AND) {
+                cout << "\tbeq $t0,0,_skipand" << count << endl;
+        } else { // opType == OR
+                cout << "\tbeq $t0,1,_skipor" << count << endl;
+        }
+        cout << "\tadd $sp,$sp,4" << endl;
 }
 
 void printExpression(Type exprType) {

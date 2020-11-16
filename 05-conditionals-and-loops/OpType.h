@@ -11,6 +11,8 @@ enum class OpType : char {
     LTE,        // less than or equal to
     GTE,        // greater than or equal to
     EQUAL,      // equal to
-    NEQUAL      // not equal to
+    NEQUAL,     // not equal to
+    AND,
+    OR
 };
 #endif
