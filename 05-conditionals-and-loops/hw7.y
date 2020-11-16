@@ -50,7 +50,7 @@ int labelCount = 0;
 %nonassoc SINON
 
 %%
-MAIN : HEADER COMMANDS '}' { if(varList != nullptr) {
+MAIN : HEADER STATEMENTS '}' { if(varList != nullptr) {
                                 cout << "\tadd $sp,$sp," << varList->size() * 4 << endl;
                              }
                              cout << "\tli $v0,10" << endl; // exit system call code
@@ -74,14 +74,18 @@ HEADER : RIEN COMMENCEMENT '(' PARAMS ')' '{' { cout << "\t.text" << endl;
 PARAMS :
        ;
 
-COMMANDS : COMMANDS COMMAND
-         |
-         ;
+STATEMENTS : STATEMENTS STATEMENT
+           |
+           ;
 
-COMMAND : STATEMENT
-        | EXPRESSION ';'
-        | error ';'
-        ;
+STATEMENT : DECLARATION ';'
+          | ASSIGNMENT ';'
+          | PRINT ';'
+          | IF
+          | WHILE
+          | '{' STATEMENTS '}'
+          | error ';'
+          ;
 
 EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Type>($1), static_cast<Type>($3)); }
            | EXPRESSION '-' EXPRESSION { $$ = doMath(OpType::SUB, static_cast<Type>($1), static_cast<Type>($3)); }
@@ -131,13 +135,6 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
            | '!' '(' EXPRESSION ')' {}
            ;
 
-STATEMENT : DECLARATION ';'
-          | ASSIGNMENT ';'
-          | PRINT ';'
-          | IF
-          | WHILE
-          ;
-
 DECLARATION : ENTIER VARLIST { /* defines an integer */ }
             | REEL VARLIST { /* defines a float */ }
             ;
@@ -149,22 +146,18 @@ VARLIST : IDENTIFIER { declareVariable($1, $<i>0); }
 ASSIGNMENT : IDENTIFIER '=' EXPRESSION { assignVariable($1, static_cast<Type>($3)); }
            ;
 
-IF : SI COUNT '(' EXPRESSION ')' FALSEIF '{' COMMANDS '}' { cout << "_falseif" << $1 << ":" << endl; } %prec LOWER_THAN_SINON
-   | SI COUNT '(' EXPRESSION ')' FALSEIF COMMAND { cout << "_falseif" << $1 << ":" << endl; } %prec LOWER_THAN_SINON
-   | SI COUNT '(' EXPRESSION ')' FALSEIF COMMAND { cout << "\tb _endif" << $1 << endl; cout << "_falseif" << $1 << ":" << endl; } SINON COMMAND { cout << "_endif" << $1 << ":" << endl; }
+IF : SI '(' EXPRESSION ')' FALSEIF STATEMENT { cout << "_falseif" << $1 << ":" << endl; } %prec LOWER_THAN_SINON
+   | SI '(' EXPRESSION ')' FALSEIF STATEMENT SINON { cout << "\tb _endif" << $1 << endl; cout << "_falseif" << $1 << ":" << endl; } STATEMENT { cout << "_endif" << $1 << ":" << endl; }
    ;
 
-COUNT : { labelCount++;
-          $<i>0 = labelCount; 
-        } 
-       ;
-
-FALSEIF : { cout << "\tlw $t0,($sp)" << endl;
+FALSEIF : { labelCount++;
+            $<i>-3 = labelCount;
+            cout << "\tlw $t0,($sp)" << endl;
             cout << "\tadd $sp,$sp,4" << endl;
-            cout << "\tbeq $t0,0,_falseif" << $<i>-4 << endl; } 
+            cout << "\tbeq $t0,0,_falseif" << labelCount << endl; } 
         ;
 
-WHILE : PENDANT COUNTWHILE '(' EXPRESSION ')' ENDWHILE '{' COMMANDS '}' { cout << "\tb _begwhile" << $1 << endl; cout << "_endwhile" << $1 << ":" << endl; }
+WHILE : PENDANT COUNTWHILE '(' EXPRESSION ')' ENDWHILE STATEMENT { cout << "\tb _begwhile" << $1 << endl; cout << "_endwhile" << $1 << ":" << endl; }
       | error '}'
       ;
 
@@ -317,6 +310,34 @@ void doComparison(OpType opType, Type leftType, Type rightType) {
                 }
                 cout << "\tsw $t0,4($sp)" << endl;
                 cout << "\tadd $sp,$sp,4" << endl;
+        } else {
+                cout << "\tl.s $f2,($sp)" << endl;
+                cout << "\tl.s $f0,4($sp)" << endl;
+                if(leftType == Type::FLOAT_TYPE && leftType != rightType) {  // left type float, right type int
+                        cout << "\tcvt.s.w $f2,$f2" << endl;
+                } else if (rightType == Type::FLOAT_TYPE && rightType != leftType) {
+                        cout << "\tcvt.s.w $f0,$f0" << endl;
+                }
+                switch (opType) {
+                        case OpType::LT:
+                                cout << "\tc.lt.s $f0,$f2" << endl;
+                                break;       
+                        case OpType::GT:
+                                cout << "\tc.gt.s $f0,$f2" << endl;               
+                                break;
+                        case OpType::LTE:
+                                cout << "\tc.le.s $f0,$f2" << endl;
+                                break;
+                        case OpType::GTE:
+                                cout << "\tc.ge.s $f0,$f2" << endl;
+                                break;
+                        case OpType::EQUAL:
+                                cout << "\tc.eq.s $f0,$f2" << endl;
+                                break;
+                        case OpType::NEQUAL:
+                                cout << "\tc.ne.s $f0,$f2" << endl;
+                                break;
+                }
         }
 }
 
@@ -337,7 +358,7 @@ void skipAndOr(OpType opType, int count) {
         if (opType == OpType::AND) {
                 cout << "\tbeq $t0,0,_skipand" << count << endl;
         } else { // opType == OR
-                cout << "\tbeq $t0,1,_skipor" << count << endl;
+                cout << "\tbne $t0,0,_skipor" << count << endl;
         }
         cout << "\tadd $sp,$sp,4" << endl;
 }
