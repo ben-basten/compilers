@@ -24,6 +24,7 @@ Node *dataList = nullptr; // keeps list of strings to print in .data section
 Node *varList = nullptr; // symbol table of all of the declared variables
 extern int lineno;
 int labelCount = 0;
+int scopeLevel = 0;
 
 %}
 %union {
@@ -53,6 +54,7 @@ int labelCount = 0;
 MAIN : HEADER STATEMENTS '}' { if(varList != nullptr) {
                                 cout << "\tadd $sp,$sp," << varList->size() * 4 << endl;
                              }
+                             scopeLevel--;
                              cout << "\tli $v0,10" << endl; // exit system call code
                              cout << "\tsyscall" << endl; 
                              cout << endl << "\t.data" << endl;
@@ -63,7 +65,8 @@ MAIN : HEADER STATEMENTS '}' { if(varList != nullptr) {
      | error '}' { yyerrok; }
      ;
 
-HEADER : RIEN COMMENCEMENT '(' PARAMS ')' '{' { cout << "\t.text" << endl;
+HEADER : RIEN COMMENCEMENT '(' PARAMS ')' '{' { scopeLevel++;
+                                                cout << "\t.text" << endl;
                                                 cout << "\t.globl main" << endl;
                                                 cout << "main:" << endl;
                                                 cout << "\tmove $fp,$sp" << endl;
@@ -78,12 +81,16 @@ STATEMENTS : STATEMENTS STATEMENT
            |
            ;
 
-STATEMENT : DECLARATION ';'
+STATEMENT : DECLARATION ';' { if(scopeLevel > 1) {
+                                string errMsg = "internal variable declaration";
+                                yyerror(errMsg.c_str());
+                              }  
+                            }
           | ASSIGNMENT ';'
           | PRINT ';'
           | IF
           | WHILE
-          | '{' STATEMENTS '}'
+          | '{' { scopeLevel++; } STATEMENTS '}' { scopeLevel--; }
           | error ';'
           ;
 
@@ -132,7 +139,11 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
            | EXPRESSION NEQ EXPRESSION { $$ = 1; doComparison(OpType::NEQUAL, static_cast<Type>($1), static_cast<Type>($3)); }
            | EXPRESSION AND { labelCount++; $2 = labelCount; skipAndOr(OpType::AND, $2); } EXPRESSION { $$ = 1; cout << "_skipand" << $2 << ":" << endl; }
            | EXPRESSION OR { labelCount++; $2 = labelCount; skipAndOr(OpType::OR, $2); } EXPRESSION { $$ = 1; cout << "_skipor" << $2 << ":" << endl; }
-           | '!' '(' EXPRESSION ')' {}
+           | '!' '(' EXPRESSION ')' { $$ = 1;
+                                      cout << "\tlw $t0,($sp)" << endl;
+                                      cout << "\tseq $t0,$t0,0" << endl;
+                                      cout << "\tsw $t0,($sp)" << endl;
+                                    }
            ;
 
 DECLARATION : ENTIER VARLIST { /* defines an integer */ }
@@ -311,6 +322,7 @@ void doComparison(OpType opType, Type leftType, Type rightType) {
                 cout << "\tsw $t0,4($sp)" << endl;
                 cout << "\tadd $sp,$sp,4" << endl;
         } else {
+                labelCount++;
                 cout << "\tl.s $f2,($sp)" << endl;
                 cout << "\tl.s $f0,4($sp)" << endl;
                 if(leftType == Type::FLOAT_TYPE && leftType != rightType) {  // left type float, right type int
@@ -323,21 +335,30 @@ void doComparison(OpType opType, Type leftType, Type rightType) {
                                 cout << "\tc.lt.s $f0,$f2" << endl;
                                 break;       
                         case OpType::GT:
-                                cout << "\tc.gt.s $f0,$f2" << endl;               
+                                cout << "\tc.lt.s $f2,$f0" << endl;               
                                 break;
                         case OpType::LTE:
                                 cout << "\tc.le.s $f0,$f2" << endl;
                                 break;
                         case OpType::GTE:
-                                cout << "\tc.ge.s $f0,$f2" << endl;
+                                cout << "\tc.lt.s $f0,$f2" << endl;
                                 break;
                         case OpType::EQUAL:
                                 cout << "\tc.eq.s $f0,$f2" << endl;
                                 break;
                         case OpType::NEQUAL:
-                                cout << "\tc.ne.s $f0,$f2" << endl;
+                                // cout << "\tc.ne.s $f0,$f2" << endl;
+                                cout << "\terr: != for floats not implemented yet" << endl;
                                 break;
                 }
+                cout << "\tbc1t _cmp" << labelCount << endl;
+                cout << "\tli $t0,0" << endl;
+                cout << "\tb _aftercmp" << labelCount << endl; 
+                cout << "_cmp" << labelCount << ":" << endl; 
+                cout << "\tli $t0,1" << endl;
+                cout << "_aftercmp" << labelCount << ":" << endl; 
+                cout << "\tsw $t0,4($sp)" << endl;
+                cout << "\tadd $sp,$sp,4" << endl;
         }
 }
 
