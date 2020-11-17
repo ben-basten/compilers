@@ -1,5 +1,7 @@
 %{
 #include <iostream>
+#include <stdio.h>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -10,6 +12,7 @@ int lineno=1;
 
 void IncrementLineNo(string text);
 int yyparse();
+int main (int argc, char **argv);
 %}
 
 letter  [A-Za-z]
@@ -74,8 +77,15 @@ int yywrap () {
     return 1;
 }
 
-int main () {
-    // yylex(); //Start doing stuff
+int main (int argc, char **argv) {
+    freopen(argv[1], "r", stdin);
+    
+    ofstream out(argv[2]);
+    cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
+
     yyparse();
+
+    fclose(stdin);
+
     return 0;
 }
