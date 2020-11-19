@@ -6,15 +6,20 @@
 #include <cstring>
 #include <cstdlib>
 #include "StateNode.h"
-#include "Node.h"
+#include "SymbolNode.h"
 #include "hw8.tab.h"
 using namespace std;
 
 int lineno=1;
 
-StateNode *stateStack; // keeps track of precompiler states
-Node *compilerVars;         // keeps track of compiler variables
+YY_BUFFER_STATE buf;
+ofstream compilerout;
 
+StateNode *stateStack;      // keeps track of precompiler states
+SymbolNode *compilerVars;         // keeps track of compiler variables
+// FileNode *fileStack;        // keeps track of include files
+
+string parseIncludeString(string input);
 string parseCompilerVar(string input);
 void setState(bool shouldCompile);
 void IncrementLineNo(string text);
@@ -76,34 +81,36 @@ multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
 {int}       { yylval.str = _strdup(yytext); return INT; }
 {str}       { yylval.str = _strdup(yytext); return STRING; }
 {var}       { yylval.str = _strdup(yytext); return IDENTIFIER; }
-<INITIAL,IFFALSE>{sip}       { /* IFNDEF */
-                               string name = parseCompilerVar(yytext);
-                               bool shouldCompile = ((compilerVars != nullptr && !compilerVars->hasName(name)) || compilerVars == nullptr);
-                               stateStack = new StateNode(shouldCompile, stateStack);
+<INITIAL,IFFALSE>{sip}      { /* IFNDEF */
+                              string name = parseCompilerVar(yytext);
+                              bool shouldCompile = ((compilerVars != nullptr && !compilerVars->hasName(name)) || compilerVars == nullptr);
+                              stateStack = new StateNode(shouldCompile, stateStack);
+                              setState(shouldCompile);
+                            }
+<INITIAL,IFFALSE>{sid}      { /* IFDEF */
+                              string name = parseCompilerVar(yytext);
+                              bool shouldCompile = !((compilerVars != nullptr &&   !compilerVars->hasName(name)) || compilerVars == nullptr);
+                              stateStack = new StateNode(shouldCompile, stateStack);
+                              setState(shouldCompile);
+                            }
+<INITIAL,IFFALSE>{psinon}   {  bool shouldCompile = stateStack->toggleState();
                                setState(shouldCompile);
-                             }
-<INITIAL,IFFALSE>{sid}       { /* IFDEF */
-                               string name = parseCompilerVar(yytext);
-                               bool shouldCompile = !((compilerVars != nullptr &&   !compilerVars->hasName(name)) || compilerVars == nullptr);
-                               stateStack = new StateNode(shouldCompile, stateStack);
-                               setState(shouldCompile);
-                             }
-<INITIAL,IFFALSE>{psinon}    {  bool shouldCompile = stateStack->toggleState();
-                                setState(shouldCompile);
-                             }
-<INITIAL,IFFALSE>{fin}       { if(stateStack != nullptr) stateStack = stateStack->pop();
-                               else cerr << "Error on line " << lineno << ": unmatched #endif";
-                               bool shouldCompile;
-                               if(stateStack == nullptr) shouldCompile = true;
-                               else shouldCompile = stateStack->isCompiling();
-                               setState(shouldCompile);
-                             }
-<INITIAL,IFFALSE>{def}       { compilerVars = new Node(parseCompilerVar(yytext), compilerVars); }
-<INITIAL,IFFALSE>{undef}     { string name = parseCompilerVar(yytext);
-                               if(compilerVars != nullptr && compilerVars->hasName(name)) {
-                                   compilerVars = compilerVars->remove(name, nullptr, compilerVars);
-                               }
-                             }
+                            }
+<INITIAL,IFFALSE>{fin}      { if(stateStack != nullptr) stateStack = stateStack->pop();
+                              else cerr << "Error on line " << lineno << ": unmatched #endif";
+                              bool shouldCompile;
+                              if(stateStack == nullptr) shouldCompile = true;
+                              else shouldCompile = stateStack->isCompiling();
+                              setState(shouldCompile);
+                            }
+<INITIAL,IFFALSE>{def}      { compilerVars = new SymbolNode(parseCompilerVar(yytext), compilerVars); }
+<INITIAL,IFFALSE>{undef}    { string name = parseCompilerVar(yytext);
+                              if(compilerVars != nullptr && compilerVars->hasName(name)) {
+                                  compilerVars = compilerVars->remove(name, nullptr, compilerVars);
+                              }
+                            }
+{inc}                       { string filename = parseIncludeString(yytext);
+                            }                    
 {single}    { lineno++; }
 {multi}     { IncrementLineNo(yytext); }
 {ws}        {}
@@ -111,6 +118,11 @@ multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
 .           { return yytext[0]; }
 <IFFALSE>.  {}
 %%
+
+string parseIncludeString(string input) {
+    string filename = parseCompilerVar(input);
+    return filename.substr(1, filename.length() - 2);
+}
 
 string parseCompilerVar(string input) {
     size_t pos = input.find(" ");
@@ -141,10 +153,14 @@ int main (int argc, char **argv) {
         fprintf(stderr, "Please provide filenames for the input and output.\n");
         return 1;
     }
-    freopen(argv[1], "r", stdin);
     
-    ofstream out(argv[2]);
-    cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
+    FILE *f = fopen (argv[1],"r");
+    buf = yy_create_buffer (f,YY_BUF_SIZE);
+    yy_switch_to_buffer (buf);
+
+    // redirecting cout to the file
+    compilerout.open (argv[2]);
+    cout.rdbuf (compilerout.rdbuf());
 
     yyparse();
 

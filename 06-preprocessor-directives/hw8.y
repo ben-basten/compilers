@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include "Node.h"
+#include "SymbolNode.h"
 #include "Type.h"
 #include "OpType.h"
 using namespace std;
@@ -20,8 +20,8 @@ void printString(string val);
 void printIdentifier(int offset);
 void yyerror (const char *er);
 
-Node *dataList = nullptr; // keeps list of strings to print in .data section
-Node *varList = nullptr; // symbol table of all of the declared variables
+SymbolNode *dataList = nullptr; // keeps list of strings to print in .data section
+SymbolNode *varList = nullptr; // symbol table of all of the declared variables
 extern int lineno;
 int labelCount = 0;
 int scopeLevel = 0;
@@ -110,7 +110,7 @@ EXPRESSION : EXPRESSION '+' EXPRESSION { $$ = doMath(OpType::ADD, static_cast<Ty
                    cout << "\tsw $t0,($sp)" << endl;
                  }
            | FLOAT { $$ = 2;
-                     dataList = new Node ($1, Type::FLOAT_TYPE, dataList);
+                     dataList = new SymbolNode ($1, Type::FLOAT_TYPE, dataList);
                      cout << "\tl.s $f0," << dataList->getUniqueName() << endl;
                      cout << "\tsub $sp,$sp,4" << endl;
                      cout << "\ts.s $f0,($sp)" << endl;
@@ -206,7 +206,7 @@ int isValidIdentifier(char *id) {
 void declareVariable(char *identifier, int type) {
         if(varList == nullptr || varList->findOffset(identifier) == -1) { // the variable doesn't already exist
                 cout << "\tsub $sp,$sp,4" << endl;
-                varList = new Node (identifier, static_cast<Type>(type), varList);
+                varList = new SymbolNode (identifier, static_cast<Type>(type), varList);
         } else {
                 string errMsg = "variable redefinition";
                 yyerror(errMsg.c_str());
@@ -398,14 +398,14 @@ void printExpression(Type exprType) {
 
 void printString(string val) {
         string noQuotes = val.substr(1, val.length() - 2);
-        dataList = new Node (strdup(noQuotes.c_str()), Type::STRING_TYPE, dataList);
+        dataList = new SymbolNode (strdup(noQuotes.c_str()), Type::STRING_TYPE, dataList);
         cout << "\tli $v0,4" << endl;
         cout << "\tla $a0," << dataList->getUniqueName() << endl;
         cout << "\tsyscall" << endl;
 }
 
 void printIdentifier(int offset) {
-        Node *var = varList->getNode(offset);
+        SymbolNode *var = varList->getNode(offset);
         switch(var->getType()) {
                 case Type::INT_TYPE:
                         cout << "\tli $v0,1" << endl;

@@ -1,22 +1,22 @@
-#ifndef _NODE_
-#define _NODE_
+#ifndef _SYMBOLNODE_
+#define _SYMBOLNODE_
 
 #include <string>
 #include "Type.h"
 
-class Node {
+class SymbolNode {
 private:
 	char* data; // stores variable names or data list values
 	std::string uniqueName; 
-	Node* next;
+	SymbolNode* next;
 	int offset = 4;
 	Type type;
 
 	void toLower(char *&val);
 public:
-	Node(char* newData, Type newType, Node *oldList);
-	Node(std::string name, Node *oldList);
-	Node * getNext();
+	SymbolNode(char* newData, Type newType, SymbolNode *oldList);
+	SymbolNode(std::string name, SymbolNode *oldList);
+	SymbolNode * getNext();
 	int getOffset();
 	Type getType();
 	Type getType(int offset);
@@ -24,8 +24,8 @@ public:
 	int size();
 	int findOffset(char *findMe); // returns offset if variable is found, -1 if not found
 	bool hasName(std::string findMe);
-	Node *getNode(int findOffset);
-	Node *remove(std::string name, Node *prev, Node *first);
+	SymbolNode *getNode(int findOffset);
+	SymbolNode *remove(std::string name, SymbolNode *prev, SymbolNode *first);
 	void printData();
 };
 

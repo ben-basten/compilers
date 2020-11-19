@@ -2,11 +2,11 @@
 #include <string>
 #include <cstdlib>
 #include <cstring>
-#include "Node.h"
+#include "SymbolNode.h"
 #include "Type.h"
 using namespace std;
 
-Node::Node(char* newData, Type newType, Node* oldList) {
+SymbolNode::SymbolNode(char* newData, Type newType, SymbolNode* oldList) {
 	data = newData;
 	next = oldList;
 	type = newType;
@@ -18,29 +18,29 @@ Node::Node(char* newData, Type newType, Node* oldList) {
 	if(next != nullptr) offset = next->getOffset() + 4;
 }
 
-Node::Node(string name, Node *oldList) {
+SymbolNode::SymbolNode(string name, SymbolNode *oldList) {
 	uniqueName = name;
 	next = oldList;
 }
 
-Node * Node::getNext () {return next;}
+SymbolNode * SymbolNode::getNext () {return next;}
 
-int Node::getOffset () {return offset;}
+int SymbolNode::getOffset () {return offset;}
 
-Type Node::getType() {return type;}
+Type SymbolNode::getType() {return type;}
 
-Type Node::getType(int offset) {
+Type SymbolNode::getType(int offset) {
 	return getNode(offset)->getType();
 }
 
-string Node::getUniqueName() { return uniqueName; }
+string SymbolNode::getUniqueName() { return uniqueName; }
 
-int Node::size() {
+int SymbolNode::size() {
 	if(next == nullptr) return 1;
 	else return 1 + next->size();
 }
 
-void Node::toLower(char *&val) {
+void SymbolNode::toLower(char *&val) {
 	int i = 0;
 	char temp;
 	while(val[i]) {
@@ -50,7 +50,7 @@ void Node::toLower(char *&val) {
 	}
 }
 
-int Node::findOffset(char *findMe) {
+int SymbolNode::findOffset(char *findMe) {
 	toLower(findMe);
 	char* tempData = data;
 	toLower(tempData);
@@ -63,7 +63,7 @@ int Node::findOffset(char *findMe) {
 	}
 }
 
-bool Node::hasName(string findMe) {
+bool SymbolNode::hasName(string findMe) {
 	if(findMe == uniqueName) {
 		return true;
 	} else if (next != nullptr) {
@@ -73,7 +73,7 @@ bool Node::hasName(string findMe) {
 	}
 }
 
-Node* Node::getNode(int findOffset) {
+SymbolNode* SymbolNode::getNode(int findOffset) {
 	if(offset == findOffset) {
 		return this;
 	} else {
@@ -81,11 +81,11 @@ Node* Node::getNode(int findOffset) {
 	}
 }
 
-Node *Node::remove(std::string name, Node *prev, Node *first) {
+SymbolNode *SymbolNode::remove(std::string name, SymbolNode *prev, SymbolNode *first) {
 	if(name != uniqueName) return next->remove(name, this, first);
 
 	if(prev == nullptr) {
-		Node *tempNext = next;
+		SymbolNode *tempNext = next;
 		delete this;
 		return tempNext;
 	} else {
@@ -95,7 +95,7 @@ Node *Node::remove(std::string name, Node *prev, Node *first) {
 	}
 }
 
-void Node::printData() {
+void SymbolNode::printData() {
 	if(type == Type::STRING_TYPE) {
 		cout << uniqueName << ":\t.asciiz \"" << data << "\"" << endl;
 	} else if (type == Type::FLOAT_TYPE) {
