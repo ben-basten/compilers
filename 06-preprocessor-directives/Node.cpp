@@ -18,6 +18,11 @@ Node::Node(char* newData, Type newType, Node* oldList) {
 	if(next != nullptr) offset = next->getOffset() + 4;
 }
 
+Node::Node(string name, Node *oldList) {
+	uniqueName = name;
+	next = oldList;
+}
+
 Node * Node::getNext () {return next;}
 
 int Node::getOffset () {return offset;}
@@ -28,7 +33,7 @@ Type Node::getType(int offset) {
 	return getNode(offset)->getType();
 }
 
-string Node::getUniqueName() {return uniqueName;}
+string Node::getUniqueName() { return uniqueName; }
 
 int Node::size() {
 	if(next == nullptr) return 1;
@@ -58,11 +63,35 @@ int Node::findOffset(char *findMe) {
 	}
 }
 
+bool Node::hasName(string findMe) {
+	if(findMe == uniqueName) {
+		return true;
+	} else if (next != nullptr) {
+		return next->hasName(findMe);
+	} else {
+		return false;
+	}
+}
+
 Node* Node::getNode(int findOffset) {
 	if(offset == findOffset) {
 		return this;
 	} else {
 		return next->getNode(findOffset); // assumes that the node exists
+	}
+}
+
+Node *Node::remove(std::string name, Node *prev, Node *first) {
+	if(name != uniqueName) return next->remove(name, this, first);
+
+	if(prev == nullptr) {
+		Node *tempNext = next;
+		delete this;
+		return tempNext;
+	} else {
+		prev->next = next;
+		delete this;
+		return first;
 	}
 }
 
@@ -75,14 +104,3 @@ void Node::printData() {
 
 	if(next != nullptr) next->printData();
 }
-
-/*
-// for debugging purposes - prints out what's in the list
-void Node::print() {
-	cout << data << " - ";
-	if(type == Type::INT_TYPE) cout << "int" << endl;
-	else cout << "float" << endl;
-
-	if(next != nullptr) next->print();
-}
-*/
