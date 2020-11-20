@@ -13,7 +13,7 @@ hw*.exe
 todo
 
 03-declarations-and-assignments/*.in
-03-declarations-and-assignments/*.asm
 04-arithmetic/*.in
 05-conditionals-and-loops/*.in
 06-preprocessor-directives/*.in
+07-methods/*.in
