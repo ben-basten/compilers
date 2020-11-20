@@ -11,14 +11,52 @@
 using namespace std;
 
 int lineno=1;
+const char* activeFile;
 
 YY_BUFFER_STATE buf;
 ofstream compilerout;
 
+extern void yyerror (const char *er);
+
+class FileNode {
+private:
+	const char *nodeFilename;
+    YY_BUFFER_STATE bufferState;
+    int line;
+    FileNode *next;
+public:
+	FileNode(const char *fn, YY_BUFFER_STATE bs, int newLine, FileNode *oldList) {
+        nodeFilename = strdup(fn);
+        bufferState = bs; 
+        line = newLine;
+        next = oldList;
+    }
+
+    int size() {
+	    if(next == nullptr) return 1;
+	    else return 1 + next->size();
+    }
+
+    FileNode *pop() {
+        FileNode *tempNext = next;
+        delete this;
+        return tempNext;
+    }
+
+    YY_BUFFER_STATE getBufferState() { return bufferState; }
+
+    const char *getFilename() { 
+        return nodeFilename; 
+    }
+
+    int getLine() { return line; }
+};
+
 StateNode *stateStack;      // keeps track of precompiler states
 SymbolNode *compilerVars;         // keeps track of compiler variables
-// FileNode *fileStack;        // keeps track of include files
+FileNode *fileStack;        // keeps track of include files
 
+void openNewFile(const char* filename);
 string parseIncludeString(string input);
 string parseCompilerVar(string input);
 void setState(bool shouldCompile);
@@ -96,8 +134,12 @@ multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
 <INITIAL,IFFALSE>{psinon}   {  bool shouldCompile = stateStack->toggleState();
                                setState(shouldCompile);
                             }
-<INITIAL,IFFALSE>{fin}      { if(stateStack != nullptr) stateStack = stateStack->pop();
-                              else cerr << "Error on line " << lineno << ": unmatched #endif";
+<INITIAL,IFFALSE>{fin}      { if(stateStack != nullptr) {
+                                stateStack = stateStack->pop();
+                              } else {
+                                string errMsg = "unmatched #endif";
+                                yyerror(errMsg.c_str());
+                              } 
                               bool shouldCompile;
                               if(stateStack == nullptr) shouldCompile = true;
                               else shouldCompile = stateStack->isCompiling();
@@ -110,6 +152,7 @@ multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
                               }
                             }
 {inc}                       { string filename = parseIncludeString(yytext);
+                              openNewFile(filename.c_str());
                             }                    
 {single}    { lineno++; }
 {multi}     { IncrementLineNo(yytext); }
@@ -118,6 +161,16 @@ multi   "/*"([^*]|((\*)+[^*/]))*\*+\/
 .           { return yytext[0]; }
 <IFFALSE>.  {}
 %%
+
+void openNewFile(const char* filename) {
+    activeFile = strdup(filename);
+
+    FILE *f = fopen (activeFile,"r");
+    buf = yy_create_buffer (f,YY_BUF_SIZE);
+    fileStack = new FileNode(activeFile, buf, lineno, fileStack);
+    yy_switch_to_buffer (buf);
+    lineno = 1;
+}
 
 string parseIncludeString(string input) {
     string filename = parseCompilerVar(input);
@@ -145,18 +198,31 @@ void IncrementLineNo(string text) {
 }
 
 int yywrap () {
-    return 1;
+    if(fileStack->size() > 1) {
+        fileStack = fileStack->pop();
+
+        YY_BUFFER_STATE newBuf = fileStack->getBufferState();
+        yy_switch_to_buffer (newBuf);
+        yy_delete_buffer(buf);
+        buf = newBuf;
+
+        activeFile = fileStack->getFilename();
+        FILE *f = fopen (activeFile,"r");
+
+        lineno = fileStack->getLine();
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 int main (int argc, char **argv) {
     if(argc < 3) {
-        fprintf(stderr, "Please provide filenames for the input and output.\n");
+        cerr << "Missing filenames for the input and output." << endl;
         return 1;
     }
     
-    FILE *f = fopen (argv[1],"r");
-    buf = yy_create_buffer (f,YY_BUF_SIZE);
-    yy_switch_to_buffer (buf);
+    openNewFile(argv[1]);
 
     // redirecting cout to the file
     compilerout.open (argv[2]);

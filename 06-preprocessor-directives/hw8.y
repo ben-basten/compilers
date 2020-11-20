@@ -23,6 +23,7 @@ void yyerror (const char *er);
 SymbolNode *dataList = nullptr; // keeps list of strings to print in .data section
 SymbolNode *varList = nullptr; // symbol table of all of the declared variables
 extern int lineno;
+extern const char *activeFile;
 int labelCount = 0;
 int scopeLevel = 0;
 
@@ -421,5 +422,5 @@ void printIdentifier(int offset) {
 }
 
 void yyerror (const char *er) {
-        cerr << "Error on line " << lineno << ": " << er << endl;
+        cerr << "Error on line " << lineno << " in file \"" << activeFile << "\": " << er << endl;
 }
